@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -37,11 +40,12 @@ var EXPORTED_SYMBOLS = ["Tilt.Rectangle"];
 
 /**
  * Tilt.Rectangle constructor.
+ * @return {Tilt.Rectangle} the newly created object
  */
-Tilt.Rectangle = function(width, height, depth) {
+Tilt.Rectangle = function() {
 
   // intercept this object using a profiler when building in debug mode
-  Tilt.Profiler.intercept("Tilt.Rectangle", this);  
+  Tilt.Profiler.intercept("Tilt.Rectangle", this);
 
   /**
    * Buffer of 2-component vertices (x, y) as the corners of a rectangle.

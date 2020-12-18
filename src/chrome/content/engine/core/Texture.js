@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -109,27 +112,35 @@ Tilt.Texture.prototype = {
   /**
    * Initializes a texture from a pre-existing image or canvas.
    *
-   * @param {Image} image: the texture source image or canvas
+   * @param {Image | HTMLCanvasElement} image: the source image or canvas
    * @param {Object} parameters: an object containing the texture properties
    */
   initTexture: function(image, parameters) {
     this.$ref = Tilt.TextureUtils.create(image, parameters);
 
-    // cache for faster access
-    this.$id = this.$ref.id;
-    this.width = this.$ref.width;
-    this.height = this.$ref.height;
-    this.loaded = true;
+    if ("undefined" !== typeof this.$ref && this.$ref !== null) {
+      // cache for faster access
+      this.$id = this.$ref.id;
+      this.width = this.$ref.width;
+      this.height = this.$ref.height;
+      this.loaded = true;
 
-    // if the onload event function is specified, call it now
-    if ("undefined" !== typeof this.onload) {
-      this.onload();
+      // if the onload event function is specified, call it now
+      if ("function" === typeof this.onload) {
+        this.onload();
+      }
+
+      // cleanup
+      this.$ref.id = null;
+      this.$ref.width = null;
+      this.$ref.height = null;
+
+      delete this.$ref.id;
+      delete this.$ref.width;
+      delete this.$ref.height;
     }
 
-    // cleanup
-    delete this.$ref.id;
-    delete this.$ref.width;
-    delete this.$ref.height;
+    this.onload = null;
     delete this.onload;
 
     image = null;
@@ -156,10 +167,28 @@ Tilt.Texture.prototype = {
   },
 
   /**
+   * Updates a region of a texture with another image.
+   *
+   * @param {Image | HTMLCanvasElement} image: the source image or canvas
+   * @param {Number} x: the x offset
+   * @param {Number} y: the y offset
+   */
+  updateSubImage2D: function(img, x, y) {
+    if (this.width === img.width && this.height === img.height && x && y) {
+      x = 0;
+      y = 0;
+    }
+
+    var gl = Tilt.$gl;
+    gl.bindTexture(gl.TEXTURE_2D, this.$ref);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  },
+
+  /**
    * Destroys this object and deletes all members.
    */
   destroy: function() {
-    Tilt.$gl.deleteTexture(this.$ref);
+    try { Tilt.$gl.deleteTexture(this.$ref); } catch(e) {}
     Tilt.destroyObject(this);
   }
 };

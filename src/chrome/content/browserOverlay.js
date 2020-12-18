@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -34,6 +37,8 @@
 
 var TiltChrome = TiltChrome || {};
 var EXPORTED_SYMBOLS = ["TiltChrome.BrowserOverlay"];
+
+/*global Cc, Ci, Cu, Services, Tilt, InspectorUI, gBrowser */
 
 /**
  * Controls the browser overlay for the Tilt extension.
@@ -67,9 +72,39 @@ TiltChrome.BrowserOverlay = {
 
   /**
    * Initializes Tilt.
-   * @param {object} event: the event firing this function
+   * @param {Event} e: the event firing this function
    */
-  initialize: function(event) {
+  initialize: function(e) {
+    // reload the necessary configuration keys and values
+    TiltChrome.Config.Visualization.reload();
+
+
+    // if we're in Firefox 11, we have some new cool stuff to use!
+    if (autoUpgrade &&
+        // the necessary prefs should explicitly exist!
+        TiltChrome.Config.Visualization.nativeTiltEnabled !== null &&
+        TiltChrome.Config.Visualization.nativeTiltHello !== null) {
+
+      // open the native implementation if available or requested
+      if (this.visualization === null &&
+          (TiltChrome.Config.Visualization.nativeTiltEnabled === true ||
+           TiltChrome.Config.Visualization.nativeTiltHello === true)) {
+
+        this.visualization = Tilt;
+        this.nativeObs();
+        this.nativeImpl();
+        return;
+      }
+      else if (this.visualization === Tilt) {
+        this.visualization = null;
+        InspectorUI.closeInspectorUI();
+
+        if (!this.revertToOldVersion) {
+          return;
+        }
+      }
+    }
+
     // first, close the visualization and clean up any mess if there was any
     this.destroy(true);
 
@@ -96,11 +131,14 @@ TiltChrome.BrowserOverlay = {
       };
 
       // remember the refresh functions from the panels iframes
-      this.sourceEditor.refresh = 
+      this.sourceEditor.refresh =
         this.sourceEditor.iframe.contentWindow.refreshCodeEditor;
 
-      this.colorPicker.refresh = 
+      this.colorPicker.refresh =
         this.colorPicker.iframe.contentWindow.refreshColorPicker;
+
+      // the document viewer zoom needs to be reset to avoid potential bugs
+      gBrowser.selectedBrowser.markupDocumentViewer.fullZoom = 1;
 
       // get the iframe which will be used to create the canvas element
       var iframe = document.getElementById("tilt-iframe"),
@@ -135,6 +173,7 @@ TiltChrome.BrowserOverlay = {
     // the document and parent nodes won't be used anymore, so nullify them
     Tilt.Document.currentContentDocument = null;
     Tilt.Document.currentParentNode = null;
+    this.revertToOldVersion = false;
 
     // quickly remove the canvas from the selected browser parent node
     if (this.canvas !== null) {
@@ -144,23 +183,26 @@ TiltChrome.BrowserOverlay = {
 
     // remove any remaining traces of popups and the visualization
     var finish = function() {
-      if (this.visualization !== null) {
-        this.visualization.destroy();
-        this.visualization = null;
+      try {
+        if (this.visualization !== null) {
+          this.visualization.destroy();
+          this.visualization = null;
+        }
+        if (this.sourceEditor !== null) {
+          this.sourceEditor.panel.hidePopup();
+          this.sourceEditor.panel = null;
+          this.sourceEditor.title = null;
+          this.sourceEditor.iframe = null;
+          this.sourceEditor = null;
+        }
+        if (this.colorPicker !== null) {
+          this.colorPicker.panel.hidePopup();
+          this.colorPicker.panel = null;
+          this.colorPicker.iframe = null;
+          this.colorPicker = null;
+        }
       }
-      if (this.sourceEditor !== null) {      
-        this.sourceEditor.panel.hidePopup();
-        this.sourceEditor.panel = null;
-        this.sourceEditor.title = null;
-        this.sourceEditor.iframe = null;
-        this.sourceEditor = null;
-      }
-      if (this.colorPicker !== null) {
-        this.colorPicker.panel.hidePopup();
-        this.colorPicker.panel = null;
-        this.colorPicker.iframe = null;
-        this.colorPicker = null;
-      }
+      catch(e) {}
 
       // if the build was in debug mode (profiling enabled), log some
       // information about the intercepted function
@@ -169,13 +211,13 @@ TiltChrome.BrowserOverlay = {
 
       // if specified, do a garbage collection when everything is over
       if (gc) {
-        window.setTimeout(this.performGC, 100);
+        window.setTimeout(function() { this.performGC(); }.bind(this), 100);
       }
     }.bind(this);
 
     // finishing the cleanup may take some time, so set a small timeout
     if (timeout) {
-      window.setTimeout(finish, 100);
+      window.setTimeout(function() { finish(); }, 100);
     }
     else {
       // the finish timeout wasn't explicitly requested, continue normally
@@ -184,11 +226,90 @@ TiltChrome.BrowserOverlay = {
   },
 
   /**
+   * Adds the necessary Inspector observers.
+   */
+  nativeObs: function() {
+    // sync with the inspector open/close notifications
+    if (!this.prepare) {
+      this.prepare = true;
+
+      Services.obs.addObserver(function onInspectorOpen() {
+        if (this.visualization !== null && this.visualization !== Tilt) {
+          this.destroy(true);
+        }
+      }.bind(this), INSPECTOR_OPENED, false);
+
+      Services.obs.addObserver(function onInspectorClose() {
+        if (this.visualization !== null) {
+          this.visualization = null;
+        }
+      }.bind(this), INSPECTOR_CLOSED, false);
+    }
+  },
+
+  /**
+   * Opens the native Tilt implementation instead of the extension.
+   */
+  nativeImpl: function() {
+    Services.obs.addObserver(function onInspectorOpen() {
+      Services.obs.removeObserver(onInspectorOpen, INSPECTOR_OPENED);
+
+      InspectorUI.stopInspecting();
+      document.getElementById("highlighter-container").style.display = "none";
+      document.getElementById("inspector-inspect-toolbutton").disabled = true;
+      document.getElementById("inspector-3D-button").checked = true;
+      window.setTimeout(function() { Tilt.initialize(); }, 100);
+
+      if (TiltChrome.Config.Visualization.nativeTiltHello) {
+        window.setTimeout(function() {
+          if (Tilt.visualizers[Tilt.currentWindowId] &&
+              Tilt.visualizers[Tilt.currentWindowId].isInitialized()) {
+
+            var showAgain = { value: true };
+            var useNewVersion = Tilt.Console.confirmCheck(
+              Tilt.StringBundle.get("tilt.native.title"),
+              Tilt.StringBundle.get("tilt.native.text"),
+              Tilt.StringBundle.get("tilt.native.check"), showAgain);
+
+            TiltChrome.Config.Visualization.Set.nativeTiltHello(
+              showAgain.value);
+
+            TiltChrome.Config.Visualization.Set.nativeTiltEnabled(
+              useNewVersion);
+
+            if (!useNewVersion) {
+              TiltChrome.BrowserOverlay.revertToOldVersion = true;
+              TiltChrome.BrowserOverlay.initialize();
+              InspectorUI.closeInspectorUI();
+            }
+          }
+        }, 1500);
+      }
+    }, INSPECTOR_OPENED, false);
+
+    InspectorUI.toggleInspectorUI();
+  },
+
+  /**
    * Forces a garbage collection.
    */
   performGC: function() {
-    QueryInterface(Ci.nsIInterfaceRequestor).
+    window.QueryInterface(Ci.nsIInterfaceRequestor).
       getInterface(Ci.nsIDOMWindowUtils).
       garbageCollect();
   }
 };
+
+
+var autoUpgrade = "object" === typeof InspectorUI &&
+                  InspectorUI &&
+                  InspectorUI.INSPECTOR_NOTIFICATIONS &&
+                  InspectorUI.openInspectorUI &&
+                  InspectorUI.closeInspectorUI &&
+                  InspectorUI.toggleInspectorUI &&
+                  InspectorUI.stopInspecting;
+
+if (autoUpgrade) {
+  var INSPECTOR_OPENED = InspectorUI.INSPECTOR_NOTIFICATIONS.OPENED;
+  var INSPECTOR_CLOSED = InspectorUI.INSPECTOR_NOTIFICATIONS.CLOSED;
+}

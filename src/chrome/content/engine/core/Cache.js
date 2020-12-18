@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -39,9 +42,7 @@ var EXPORTED_SYMBOLS = [
   "Tilt.$activeShader",
   "Tilt.$enabledAttributes",
   "Tilt.$loadedTextures",
-  "Tilt.$ui",
-  "Tilt.clearCache",
-  "Tilt.destroyObject"];
+  "Tilt.clearCache"];
 
 /* All cached variables begin with the $ sign, for easy spotting.
  * ------------------------------------------------------------------------ */
@@ -75,6 +76,12 @@ Tilt.$loadedTextures = {};
  * Clears the cache and sets all the variables to default.
  */
 Tilt.clearCache = function() {
+  Tilt.destroyObject(Tilt.$gl);
+  Tilt.destroyObject(Tilt.$renderer);
+  Tilt.destroyObject(Tilt.$activeShader);
+  Tilt.destroyObject(Tilt.$enabledAttributes);
+  Tilt.destroyObject(Tilt.$loadedTextures);
+
   Tilt.$gl = null;
   Tilt.$renderer = null;
   Tilt.$activeShader = -1;
@@ -83,22 +90,4 @@ Tilt.clearCache = function() {
 
   Tilt.GLSL.$count = 0;
   Tilt.TextureUtils.$count = 0;
-};
-
-/**
- * Destroys an object and deletes all members.
- */
-Tilt.destroyObject = function(scope) {
-  for (var i in scope) {
-    try {
-      if ("function" === typeof scope[i].destroy) {
-        scope[i].destroy();
-      }
-    }
-    catch(e) {}
-    finally {
-      scope[i] = null;
-      delete scope[i];
-    }
-  }
 };

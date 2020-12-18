@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -40,7 +43,8 @@ var EXPORTED_SYMBOLS = ["Tilt.Container"];
  *
  * @param {Object} properties: additional properties for this object
  *  @param {Boolean} hidden: specifies if this shouldn't be drawn
- *  @param {Boolean} disabled: specifies if this shouldn't receive events
+ *  @param {Boolean} disabled: true if the children shouldn't receive events
+ *  @param {Boolean} standby: true if the container should respond to events
  *  @param {String} background: color to fill the screen
  *  @param {Number} x: the x position of the object
  *  @param {Number} y: the y position of the object
@@ -52,7 +56,7 @@ var EXPORTED_SYMBOLS = ["Tilt.Container"];
 Tilt.Container = function(properties) {
 
   // intercept this object using a profiler when building in debug mode
-  Tilt.Profiler.intercept("Tilt.Container", this); 
+  Tilt.Profiler.intercept("Tilt.Container", this);
 
   // make sure the properties parameter is a valid object
   properties = properties || {};
@@ -66,6 +70,11 @@ Tilt.Container = function(properties) {
    * Variable specifying if this object shouldn't be responsive to events.
    */
   this.disabled = properties.disabled || false;
+
+  /**
+   * Specifies if the container should respond to events.
+   */
+  this.standby = properties.standby || false;
 
   /**
    * The color of the full screen background rectangle.
@@ -192,21 +201,6 @@ Tilt.Container.prototype.getHeight = function() {
  * @param {Tilt.Renderer} tilt: optional, a reference to a Tilt.Renderer
  */
 Tilt.Container.prototype.update = function(frameDelta, tilt) {
-  var element, i, len;
-
-  // a view has multiple elements attach, browse and handle each one
-  for (i = 0, len = this.length; i < len; i++) {
-    element = this[i];
-
-    // some elements don't require an update function, check for it first
-    if ("function" === typeof element.update) {
-
-      // update only if the element is visible and enabled
-      if (!element.hidden && !element.disabled) {
-        element.update(frameDelta, tilt);
-      }
-    }
-  }
 };
 
 /**
@@ -254,6 +248,15 @@ Tilt.Container.prototype.draw = function(frameDelta, tilt) {
 
     // draw only if the element is visible (it may be enabled or not)
     if (!element.hidden) {
+
+      // some elements don't require an update function, check for it first
+      if ("function" === typeof element.update) {
+
+        // update only if the element is visible and enabled
+        if (!element.hidden && !element.disabled) {
+          element.update(frameDelta, tilt);
+        }
+      }
 
       // if the current view bounds do not restrict drawing the child elements
       if (width === 0 || height === 0) {
@@ -317,6 +320,18 @@ Tilt.Container.prototype.isMouseOver = function(element) {
   // check to see if the mouse pointer is inside the element bounds
   return mouseX > boundsX && mouseX < boundsX + boundsWidth &&
          mouseY > boundsY && mouseY < boundsY + boundsHeight;
+};
+
+/**
+ * Removes all the children from the container.
+ */
+Tilt.Container.prototype.clear = function() {
+  for (var i = 0, len = this.length; i < len; i++) {
+    this[i].destroy();
+    this[i] = null;
+  }
+
+  this.splice(0, this.length);
 };
 
 /**

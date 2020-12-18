@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -53,6 +56,7 @@ var EXPORTED_SYMBOLS = ["Tilt.Sprite"];
  *  @param {Function} onmousedown: function called when the event is triggered
  *  @param {Function} onmouseup: function called when the event is triggered
  *  @param {Function} onclick: function called when the event is triggered
+ * @return {Tilt.Sprite} the newly created object
  */
 Tilt.Sprite = function(texture, region, properties) {
 
@@ -265,11 +269,7 @@ Tilt.Sprite.prototype = {
 
     // if tinting was specified, default back to the original values
     if (tint !== null) {
-      var $tint = tilt.$tintColor;
-      $tint[0] = 1;
-      $tint[1] = 1;
-      $tint[2] = 1;
-      $tint[3] = 1;
+      tilt.tint("#fff");
     }
 
     if (Tilt.UI.debug) {

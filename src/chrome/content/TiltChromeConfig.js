@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -32,8 +35,12 @@
  ***** END LICENSE BLOCK *****/
 "use strict";
 
+Cu.import("resource://gre/modules/Services.jsm");
+
 var TiltChrome = TiltChrome || {};
 var EXPORTED_SYMBOLS = ["TiltChrome.Config.UI"];
+
+/*global Tilt */
 
 /**
  * Configuration parameters regarding the user interface.
@@ -56,7 +63,7 @@ TiltChrome.Config.UI = {
         value: 100
       },
       alphaSlider: {
-        value: 80
+        value: 100
       },
       textureSlider: {
         value: 100
@@ -76,7 +83,7 @@ TiltChrome.Config.UI = {
         value: 100
       },
       alphaSlider: {
-        value: 80
+        value: 100
       },
       textureSlider: {
         value: 100
@@ -159,8 +166,125 @@ TiltChrome.Config.UI = {
     "img": {
       fill: "#FFB473"
     },
+    "iframe": {
+      fill: "#85004B"
+    },
     "other": {
-      fill: "#444"
+      fill: "#666"
     }
   }
 };
+
+/**
+ * Configuration parameters regarding the visualization functionality.
+ */
+TiltChrome.Config.Visualization = {
+
+  /**
+   * Specific settings for each element describing the visualization options.
+   */
+  nativeTiltEnabled: null,
+  nativeTiltHello: null,
+  refreshVisualization: null,
+  sourceEditorTheme: null,
+  hideUserInterfaceAtInit: null,
+  disableMinidomAtInit: null,
+  enableJoystick: null,
+  useAccelerometer: null,
+  escapeKeyCloses: null,
+  keyShortcutOpenClose: null,
+
+  /**
+   * Reloads all the visualization options from the preferences branch.
+   */
+  reload: function() {
+    try {
+      this.nativeTiltEnabled =
+        Services.prefs.getBoolPref("devtools.tilt.enabled");
+    }
+    catch(e) {}
+
+    this.nativeTiltHello =
+      Tilt.Preferences.get("options.nativeTiltHello", "boolean");
+
+    this.refreshVisualization =
+      Tilt.Preferences.get("options.refreshVisualization", "integer");
+
+    this.sourceEditorTheme =
+      Tilt.Preferences.get("options.sourceEditorTheme", "integer");
+
+    this.hideUserInterfaceAtInit =
+      Tilt.Preferences.get("options.hideUserInterfaceAtInit", "boolean");
+
+    this.disableMinidomAtInit =
+      Tilt.Preferences.get("options.disableMinidomAtInit", "boolean");
+
+    this.enableJoystick =
+      Tilt.Preferences.get("options.enableJoystick", "boolean");
+
+    this.useAccelerometer =
+      Tilt.Preferences.get("options.useAccelerometer", "boolean");
+
+    this.escapeKeyCloses =
+      Tilt.Preferences.get("options.escapeKeyCloses", "boolean");
+
+    this.keyShortcutOpenClose =
+      Tilt.Preferences.get("options.keyShortcutOpenClose", "string");
+  }
+};
+
+/**
+ * Set the configuration parameters regarding the visualization functionality.
+ */
+TiltChrome.Config.Visualization.Set = {
+
+  nativeTiltEnabled: function(value) {
+    try {
+      Services.prefs.setBoolPref("devtools.tilt.enabled", value);
+    }
+    catch(e) {}
+  },
+
+  nativeTiltHello: function(value) {
+    Tilt.Preferences.set("options.nativeTiltHello", "boolean", value);
+  },
+
+  refreshVisualization: function(value) {
+    Tilt.Preferences.set("options.refreshVisualization", "integer", value);
+  },
+
+  sourceEditorTheme: function(value) {
+    Tilt.Preferences.set("options.sourceEditorTheme", "integer", value);
+  },
+
+  hideUserInterfaceAtInit: function(value) {
+    Tilt.Preferences.set("options.hideUserInterfaceAtInit", "boolean", value);
+  },
+
+  disableMinidomAtInit: function(value) {
+    Tilt.Preferences.set("options.disableMinidomAtInit", "boolean", value);
+  },
+
+  enableJoystick: function(value) {
+    Tilt.Preferences.set("options.enableJoystick", "boolean", value);
+  },
+
+  useAccelerometer: function(value) {
+    Tilt.Preferences.set("options.useAccelerometer", "boolean", value);
+  },
+
+  escapeKeyCloses: function(value) {
+    Tilt.Preferences.set("options.escapeKeyCloses", "boolean", value);
+  },
+
+  keyShortcutOpenClose: function(value) {
+    Tilt.Preferences.set("options.keyShortcutOpenClose", "string", value);
+  }
+};
+
+// bind the owner object to the necessary functions
+Tilt.bindObjectFunc(TiltChrome.Config.UI);
+Tilt.bindObjectFunc(TiltChrome.Config.Visualization);
+
+// load the necessary configuration keys and values
+TiltChrome.Config.Visualization.reload();

@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,6 +38,8 @@
 var Tilt = Tilt || {};
 var EXPORTED_SYMBOLS = ["Tilt.Math"];
 
+/*global vec3, mat3, mat4, quat4 */
+
 /**
  * Various math functions required by the engine.
  */
@@ -47,7 +52,7 @@ Tilt.Math = {
    * @return {Number} the degrees converted to radians
    */
   radians: function(degrees) {
-    return degrees * Math.PI / 180;
+    return degrees * 0.0174532925;
   },
 
   /**
@@ -57,7 +62,7 @@ Tilt.Math = {
    * @return {Number} the radians converted to degrees
    */
   degrees: function(radians) {
-    return radians * 180 / Math.PI;
+    return radians * 57.2957795;
   },
 
   /**
@@ -107,6 +112,11 @@ Tilt.Math = {
    * @param {Number} max: the maximum allowed value for the number
    */
   clamp: function(value, min, max) {
+    if (min > max) {
+      var aux = min;
+      min = max;
+      max = aux;
+    }
     return Math.max(min, Math.min(max, value));
   },
 
@@ -123,10 +133,10 @@ Tilt.Math = {
     angle *= 0.5;
 
     var sin = Math.sin(angle),
+        w = Math.cos(angle),
         x = (axis[0] * sin),
         y = (axis[1] * sin),
-        z = (axis[2] * sin),
-        w = Math.cos(angle);
+        z = (axis[2] * sin);
 
     if ("undefined" === typeof out) {
       return [x, y, z, w];
@@ -156,12 +166,15 @@ Tilt.Math = {
       x = pitch * 0.5,
       y = yaw   * 0.5,
       z = roll  * 0.5,
-      sinr = Math.sin(x),
-      sinp = Math.sin(y),
-      siny = Math.sin(z),
-      cosr = Math.cos(x),
-      cosp = Math.cos(y),
-      cosy = Math.cos(z);
+
+      sin = Math.sin,
+      cos = Math.cos,
+      sinr = sin(x),
+      sinp = sin(y),
+      siny = sin(z),
+      cosr = cos(x),
+      cosp = cos(y),
+      cosy = cos(z);
 
     x = sinr * cosp * cosy - cosr * sinp * siny;
     y = cosr * sinp * cosy + sinr * cosp * siny;
@@ -209,10 +222,10 @@ Tilt.Math = {
       // transform the homogenous coordinates into screen space
       out[0]  =  coordinates[0] / coordinates[3];
       out[1]  =  coordinates[1] / coordinates[3];
-      out[0] *=  viewport[2] / 2;
-      out[1] *= -viewport[3] / 2;
-      out[0] +=  viewport[2] / 2;
-      out[1] +=  viewport[3] / 2;
+      out[0] *=  viewport[2] * 0.5;
+      out[1] *= -viewport[3] * 0.5;
+      out[0] +=  viewport[2] * 0.5;
+      out[1] +=  viewport[3] * 0.5;
       out[2]  =  0;
     }
     else {
@@ -298,9 +311,13 @@ Tilt.Math = {
    *                   2 the ray and the triangle are in the same plane
    */
   intersectRayTriangle: function(v0, v1, v2, ray, intersection) {
-    var u = vec3.create(), v = vec3.create(), n = vec3.create(),
-        w = vec3.create(), w0 = vec3.create(),
-        pos = ray.position, dir = ray.direction,
+    var u = vec3.create(),
+        v = vec3.create(),
+        n = vec3.create(),
+        w = vec3.create(),
+        w0 = vec3.create(),
+        pos = ray.position,
+        dir = ray.direction,
         a, b, r, uu, uv, vv, wu, wv, D, s, t;
 
     if ("undefined" === typeof intersection) {
@@ -324,9 +341,10 @@ Tilt.Math = {
     b = +vec3.dot(n, dir);
 
     if (Math.abs(b) < 0.0001) { // ray is parallel to triangle plane
-      if (a == 0) {
+      if (a === 0) {
         return 2; // ray lies in triangle plane
-      } else {
+      }
+      else {
         return 0; // ray disjoint from plane
       }
     }
@@ -373,11 +391,11 @@ Tilt.Math = {
    * @param {Number} t: the third argument
    */
   hue2rgb: function(p, q, t) {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1 / 6) return p + (q - p) * 6 * t;
-    if (t < 1 / 2) return q;
-    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    if (t < 0) { t += 1; }
+    else if (t > 1) { t -= 1; }
+    else if (t < 0.166666667) { return p + (q - p) * 6 * t; }
+    else if (t < 0.5) { return q; }
+    else if (t < 0.666666667) { return p + (q - p) * (2 / 3 - t) * 6; }
 
     return p;
   },
@@ -394,25 +412,31 @@ Tilt.Math = {
    * @return {Array} the HSL representation
    */
   rgb2hsl: function(r, g, b) {
-    r /= 255;
-    g /= 255;
-    b /= 255;
+    r *= 0.00392156863;
+    g *= 0.00392156863;
+    b *= 0.00392156863;
 
     var max = Math.max(r, g, b),
       min = Math.min(r, g, b),
-      h, s, l = (max + min) / 2;
+      d, h, s, l = (max + min) * 0.5;
 
     if (max === min) {
       h = s = 0; // achromatic
-    } else {
-      var d = max - min;
+    }
+    else {
+      d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+      if (max === r) {
+        h = (g - b) / d + (g < b ? 6 : 0);
       }
+      else if (max === g) {
+        h = (b - r) / d + 2;
+      }
+      else if (max === b) {
+        h = (r - g) / d + 4;
+      }
+
       h /= 6;
     }
 
@@ -431,17 +455,18 @@ Tilt.Math = {
    * @return {Array} the RGB representation
    */
   hsl2rgb: function(h, s, l) {
-    var r, g, b;
+    var r, g, b, q, p;
 
     if (s === 0) {
       r = g = b = l; // achromatic
-    } else {
-      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      var p = 2 * l - q;
+    }
+    else {
+      q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      p = 2 * l - q;
 
-      r = this.hue2rgb(p, q, h + 1 / 3);
+      r = this.hue2rgb(p, q, h + 0.333333333);
       g = this.hue2rgb(p, q, h);
-      b = this.hue2rgb(p, q, h - 1 / 3);
+      b = this.hue2rgb(p, q, h - 0.333333333);
     }
 
     return [r * 255, g * 255, b * 255];
@@ -459,25 +484,31 @@ Tilt.Math = {
    * @return {Array} the HSV representation
    */
   rgb2hsv: function(r, g, b) {
-    r = r / 255;
-    g = g / 255;
-    b = b / 255;
+    r *= 0.00392156863;
+    g *= 0.00392156863;
+    b *= 0.00392156863;
 
     var max = Math.max(r, g, b),
       min = Math.min(r, g, b),
-      h, s, v = max;
+      d, h, s, v = max;
 
-    var d = max - min;
+    d = max - min;
     s = max === 0 ? 0 : d / max;
 
     if (max === min) {
       h = 0; // achromatic
-    } else {
-      switch(max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+    }
+    else {
+      if (max === r) {
+        h = (g - b) / d + (g < b ? 6 : 0);
       }
+      else if (max === g) {
+        h = (b - r) / d + 2;
+      }
+      else if (max === b) {
+        h = (r - g) / d + 4;
+      }
+
       h /= 6;
     }
 
@@ -501,15 +532,26 @@ Tilt.Math = {
       f = h * 6 - i,
       p = v * (1 - s),
       q = v * (1 - f * s),
-      t = v * (1 - (1 - f) * s);
+      t = v * (1 - (1 - f) * s),
+      im6 = i % 6;
 
-    switch (i % 6) {
-      case 0: r = v; g = t; b = p; break;
-      case 1: r = q; g = v; b = p; break;
-      case 2: r = p; g = v; b = t; break;
-      case 3: r = p; g = q; b = v; break;
-      case 4: r = t; g = p; b = v; break;
-      case 5: r = v; g = p; b = q; break;
+    if (im6 === 0) {
+      r = v; g = t; b = p;
+    }
+    else if (im6 === 1) {
+      r = q; g = v; b = p;
+    }
+    else if (im6 === 2) {
+      r = p; g = v; b = t;
+    }
+    else if (im6 === 3) {
+      r = p; g = q; b = v;
+    }
+    else if (im6 === 4) {
+      r = t; g = p; b = v;
+    }
+    else if (im6 === 5) {
+      r = v; g = p; b = q;
     }
 
     return [r * 255, g * 255, b * 255];
@@ -523,57 +565,90 @@ Tilt.Math = {
    * with ranges from 0..1
    */
   hex2rgba: function(color) {
-    var rgba, r, g, b, a, cr, cg, cb, ca,
-      hex = color.charAt(0) === "#" ? color.substring(1) : color;
+    var hex = color.charAt(0) === "#" ? color.substring(1) : color,
+      value, rgba, r, g, b, a, cr, cg, cb, ca;
 
     if ("undefined" !== typeof this[hex]) {
       return this[hex];
     }
+    else {
+      value = window.parseInt(hex, 16);
+    }
 
     // e.g. "f00"
     if (hex.length === 3) {
-      cr = hex.charAt(0);
-      cg = hex.charAt(1);
-      cb = hex.charAt(2);
-      hex = [cr, cr, cg, cg, cb, cb, "ff"].join('');
+      r = ((value & 0xf00) >> 8) * 0.062745098;
+      g = ((value & 0x0f0) >> 4) * 0.062745098;
+      b = ((value & 0x00f)     ) * 0.062745098;
+      a = 1;
+
+      return (this[hex] = [r, g, b, a]);
     }
     // e.g. "f008"
-    else if (hex.length === 4 || hex.length === 5) {
-      cr = hex.charAt(0);
-      cg = hex.charAt(1);
-      cb = hex.charAt(2);
-      ca = hex.charAt(3);
-      hex = [cr, cr, cg, cg, cb, cb, ca, ca].join('');
+    else if (hex.length === 4) {
+      r = ((value & 0xf000) >> 12) * 0.062745098;
+      g = ((value & 0x0f00) >> 8 ) * 0.062745098;
+      b = ((value & 0x00f0) >> 4 ) * 0.062745098;
+      a = ((value & 0x000f)      ) * 0.062745098;
+
+      return (this[hex] = [r, g, b, a]);
+    }
+    // e.g. "ff0000"
+    else if (hex.length === 6) {
+      r = ((value & 0xff0000) >> 16) * 0.00392156863;
+      g = ((value & 0x00ff00) >> 8 ) * 0.00392156863;
+      b = ((value & 0x0000ff)      ) * 0.00392156863;
+      a = 1;
+
+      return (this[hex] = [r, g, b, a]);
+    }
+    // e.g. "f0088"
+    else if (hex.length === 5) {
+      r = ((value & 0xf0000) >> 12) / 255;
+      g = ((value & 0x0f000) >> 8 ) / 255;
+      b = ((value & 0x00f00) >> 4 ) / 255;
+      a = ((value & 0x000f0)      ) / 255;
+
+      return (this[hex] = [r, g, b, a]);
+    }
+    // e.g "ff0000aa"
+    else if (hex.length === 8) {
+      r = parseInt(hex.substring(0, 2), 16) * 0.00392156863;
+      g = parseInt(hex.substring(2, 4), 16) * 0.00392156863;
+      b = parseInt(hex.substring(4, 6), 16) * 0.00392156863;
+      a = parseInt(hex.substring(6, 8), 16) * 0.00392156863;
+
+      return (this[hex] = [r, g, b, a]);
     }
     // e.g. "rgba(255, 0, 0, 128)"
     else if (hex.match("^rgba") == "rgba") {
       rgba = hex.substring(5, hex.length - 1).split(',');
-      rgba[0] /= 255;
-      rgba[1] /= 255;
-      rgba[2] /= 255;
-      rgba[3] /= 255;
+      rgba[0] *= 0.00392156863;
+      rgba[1] *= 0.00392156863;
+      rgba[2] *= 0.00392156863;
+      rgba[3] *= 0.00392156863;
 
-      this[hex] = rgba;
-      return rgba;
+      return (this[hex] = rgba);
     }
     // e.g. "rgb(255, 0, 0)"
     else if (hex.match("^rgb") == "rgb") {
       rgba = hex.substring(4, hex.length - 1).split(',');
-      rgba[0] /= 255;
-      rgba[1] /= 255;
-      rgba[2] /= 255;
+      rgba[0] *= 0.00392156863;
+      rgba[1] *= 0.00392156863;
+      rgba[2] *= 0.00392156863;
       rgba[3] = 1;
 
-      this[hex] = rgba;
-      return rgba;
+      return (this[hex] = rgba);
     }
-
-    r = parseInt(hex.substring(0, 2), 16) / 255;
-    g = parseInt(hex.substring(2, 4), 16) / 255;
-    b = parseInt(hex.substring(4, 6), 16) / 255;
-    a = hex.length === 6 ? 1 : parseInt(hex.substring(6, 8), 16) / 255;
-
-    this[hex] = rgba = [r, g, b, a];
-    return rgba;
+    // your argument is invalid
+    else {
+      return (this[hex] = [0, 0, 0, 1]);
+    }
   }
 };
+
+// bind the owner object to the necessary functions
+Tilt.bindObjectFunc(Tilt.Math);
+
+// intercept this object using a profiler when building in debug mode
+Tilt.Profiler.intercept("Tilt.Math", Tilt.Math);

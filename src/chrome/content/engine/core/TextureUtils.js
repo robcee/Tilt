@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -43,11 +46,15 @@ Tilt.TextureUtils = {
   /**
    * Initializes a texture from a pre-existing image or canvas.
    *
-   * @param {Image} image: the texture source image or canvas
+   * @param {Image | HTMLCanvasElement} image: the source image or canvas
    * @param {Object} parameters: an object containing the texture properties
    * @return {WebGLTexture} the created texture
    */
   create: function(image, parameters) {
+    if ("undefined" === typeof image || image === null) {
+      return;
+    }
+
     // make sure the parameters argument is an object
     parameters = parameters || {};
 
@@ -167,30 +174,39 @@ Tilt.TextureUtils = {
    *
    * @param {Image} image: the image to be scaled
    * @param {Object} parameters: an object containing the following properties
+   *  @param {Boolean} preserve: true if resize should be ignored
    *  @param {String} fill: optional, color to fill the transparent bits
    *  @param {String} stroke: optional, color to draw an image outline
    *  @param {Number} strokeWeight: optional, the width of the outline
    * @return {Image} the resized image
    */
   resizeImageToPowerOfTwo: function(image, parameters) {
-    var isChromePath = (image.src || "").indexOf("chrome://"),
-      isPowerOfTwoWidth = Tilt.Math.isPowerOfTwo(image.width),
-      isPowerOfTwoHeight = Tilt.Math.isPowerOfTwo(image.height);
-
-    // first check if the image is not already power of two
-    if (isPowerOfTwoWidth && isPowerOfTwoHeight && isChromePath === -1) {
-      return image;
-    }
-
     // make sure the parameters argument is an object
     parameters = parameters || {};
 
+    var isChromePath = (image.src || "").indexOf("chrome://"),
+      isPowerOfTwoWidth = Tilt.Math.isPowerOfTwo(image.width),
+      isPowerOfTwoHeight = Tilt.Math.isPowerOfTwo(image.height),
+      width, height, canvas, context;
+
+    // first check if the image is not already power of two
+    if (parameters.preserve || (
+        isPowerOfTwoWidth && isPowerOfTwoHeight && isChromePath === -1)) {
+      try {
+        return image;
+      }
+      finally {
+        image = null;
+        parameters = null;
+      }
+    }
+
     // calculate the power of two dimensions for the npot image
-    var width = Tilt.Math.nextPowerOfTwo(image.width),
-      height = Tilt.Math.nextPowerOfTwo(image.height),
+    width = Tilt.Math.nextPowerOfTwo(image.width);
+    height = Tilt.Math.nextPowerOfTwo(image.height);
 
     // create a canvas, then we will use a 2d context to scale the image
-    canvas = Tilt.Document.initCanvas(width, height),
+    canvas = Tilt.Document.initCanvas(width, height);
 
     // do some 2d context magic
     context = canvas.getContext("2d");

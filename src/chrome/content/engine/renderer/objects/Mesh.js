@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -47,6 +50,7 @@ var EXPORTED_SYMBOLS = ["Tilt.Mesh"];
  *  @param {Tilt.Texture} texture: optional texture to be used by the shader
  *  @param {Number} drawMode: WebGL enum, like tilt.TRIANGLES
  *  @param {Function} draw: optional function to handle custom drawing
+ * @return {Tilt.Mesh} the newly created object
  */
 Tilt.Mesh = function(parameters) {
 
@@ -63,10 +67,7 @@ Tilt.Mesh = function(parameters) {
   }
 
   // the color should be [r, g, b, a] array, check this now
-  if ("string" === typeof this.color) {
-    this.color = Tilt.Math.hex2rgba(this.color);
-  }
-  else if ("undefined" === typeof this.color) {
+  if ("undefined" === typeof this.color) {
     this.color = [1, 1, 1, 1];
   }
 
@@ -114,8 +115,6 @@ Tilt.Mesh.prototype = {
     else {
       tilt.drawVertices(drawMode, vertices.numItems);
     }
-
-    // TODO: use the normals buffer, add some lighting
   },
 
   /**

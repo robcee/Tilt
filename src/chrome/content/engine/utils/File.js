@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,26 +38,36 @@
 var Tilt = Tilt || {};
 var EXPORTED_SYMBOLS = ["Tilt.File"];
 
+/*global Cc, Ci, Cu, Components, FileUtils, NetUtil */
+
 Tilt.File = {
 
   /**
-   * Shows a file picker and returns the result.
+   * Shows a file or folder picker and returns the result.
    *
+   * @param {String} message: the title for the picker
    * @param {String} type: either "file" or "folder"
    * @return {Object} the picked file if the returned OK, null otherwise
    */
-  showPicker: function(type) {
+  showPicker: function(message, type) {
     var fp, res, folder;
 
-    fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
-    fp.init(window, "Select the folder to save the 3D webpage", 
-      type === "folder" ? Ci.nsIFilePicker.modeGetFolder :
-                          Ci.nsIFilePicker.modeOpen);
+    try {
+      fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
+      fp.init(window, message, type === "folder" ?
+        Ci.nsIFilePicker.modeGetFolder :
+        Ci.nsIFilePicker.modeOpen);
 
-    if ((res = fp.show()) == Ci.nsIFilePicker.returnOK) {
-      return fp.file;
+      if ((res = fp.show()) == Ci.nsIFilePicker.returnOK) {
+        return fp.file;
+      }
+      else {
+        return null;
+      }
     }
-    else {
+    catch(e) {
+      // running from an unprivileged environment
+      Tilt.Console.error(e.message);
       return null;
     }
   },
@@ -64,29 +77,40 @@ Tilt.File = {
    *
    * @param {String} data: the contents
    * @param {String} path: the path of the file
+   * @return {Boolean} true if the save operation was succesful
    */
   save: function(data, path) {
     var file, ostream, istream, converter;
 
-    Cu["import"]("resource://gre/modules/FileUtils.jsm");
-    Cu["import"]("resource://gre/modules/NetUtil.jsm");
+    try {
+      Cu.import("resource://gre/modules/FileUtils.jsm");
+      Cu.import("resource://gre/modules/NetUtil.jsm");
 
-    file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-    file.initWithPath(path);
+      file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+      file.initWithPath(path);
 
-    ostream = FileUtils.openSafeFileOutputStream(file);
+      ostream = FileUtils.openSafeFileOutputStream(file);
 
-    converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"].
-      createInstance(Ci.nsIScriptableUnicodeConverter);
-  
-    converter.charset = "UTF-8";
-    istream = converter.convertToInputStream(data);
+      converter = Cc["@mozilla.org/intl/scriptableunicodeconverter"].
+        createInstance(Ci.nsIScriptableUnicodeConverter);
 
-    NetUtil.asyncCopy(istream, ostream, function(status) {
-      if (!Components.isSuccessCode(status)) {
-        return;
-      }
-    });  
+      converter.charset = "UTF-8";
+      istream = converter.convertToInputStream(data);
+
+      NetUtil.asyncCopy(istream, ostream, function(status) {
+        if (!Components.isSuccessCode(status)) {
+          return true;
+        }
+        else {
+          return false;
+        }
+      });
+    }
+    catch(e) {
+      // running from an unprivileged environment
+      Tilt.Console.error(e.message);
+      return false;
+    }
   },
 
   /**
@@ -94,31 +118,40 @@ Tilt.File = {
    *
    * @param {String} canvas: the contents
    * @param {String} path: the path of the file
+   * @return {Boolean} true if the save operation was succesful
    */
   saveImage: function(canvas, path) {
     var file, io, source, target, persist;
 
-    Cu["import"]("resource://gre/modules/FileUtils.jsm");
-    Cu["import"]("resource://gre/modules/NetUtil.jsm");
+    try {
+      Cu.import("resource://gre/modules/FileUtils.jsm");
+      Cu.import("resource://gre/modules/NetUtil.jsm");
 
-    file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-    file.initWithPath(path);
+      file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+      file.initWithPath(path);
 
-    io = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+      io = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
 
-    source = io.newURI(canvas.toDataURL("image/png", ""), "UTF8", null);
-    target = io.newFileURI(file);
+      source = io.newURI(canvas.toDataURL("image/png", ""), "UTF8", null);
+      target = io.newFileURI(file);
 
-    persist = Cc["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"].
-      createInstance(Ci.nsIWebBrowserPersist);
+      persist = Cc["@mozilla.org/embedding/browser/nsWebBrowserPersist;1"].
+        createInstance(Ci.nsIWebBrowserPersist);
 
-    persist.persistFlags = Ci.nsIWebBrowserPersist.
-      PERSIST_FLAGS_REPLACE_EXISTING_FILES;
+      persist.persistFlags = Ci.nsIWebBrowserPersist.
+        PERSIST_FLAGS_REPLACE_EXISTING_FILES;
 
-    persist.persistFlags |= Ci.nsIWebBrowserPersist.
-      PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
+      persist.persistFlags |= Ci.nsIWebBrowserPersist.
+        PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION;
 
-    persist.saveURI(source, null, null, null, null, file);
+      persist.saveURI(source, null, null, null, null, file);
+      return true;
+    }
+    catch(e) {
+      // running from an unprivileged environment
+      Tilt.Console.error(e.message);
+      return false;
+    }
   },
 
   /**
@@ -129,5 +162,12 @@ Tilt.File = {
     else if (navigator.appVersion.indexOf("Mac") !== -1) { return "/"; }
     else if (navigator.appVersion.indexOf("X11") !== -1) { return "/"; }
     else if (navigator.appVersion.indexOf("Linux") !== -1) { return "/"; }
+    else { return "/"; }
   })()
 };
+
+// bind the owner object to the necessary functions
+Tilt.bindObjectFunc(Tilt.File);
+
+// intercept this object using a profiler when building in debug mode
+Tilt.Profiler.intercept("Tilt.File", Tilt.File);

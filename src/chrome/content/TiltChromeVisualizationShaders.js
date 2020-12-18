@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -37,7 +40,7 @@ var EXPORTED_SYMBOLS = ["TiltChrome.Shaders"];
 
 TiltChrome.Shaders = {};
 
-/** 
+/**
  * A custom visualization shader.
  *
  * @param {Attribute} vertexPosition: the vertex position
@@ -88,12 +91,12 @@ TiltChrome.Shaders.Visualization = {
 "varying vec3 color;",
 
 "void main(void) {",
-"  if (texCoord.s < 0.0) {",
+"  if (texCoord.x < 0.0) {",
 "    gl_FragColor = vec4(color.r, color.g, color.b, tint.a);",
 "  }",
 "  else {",
-"    vec4 texture = texture2D(sampler, texCoord);",
-"    gl_FragColor = tint * texture * alpha + tint * (1.0 - alpha);",
+"    vec3 texture = texture2D(sampler, texCoord).rgb;",
+"    gl_FragColor = tint * alpha * vec4(texture, 1.0) + tint * (1.0 - alpha);",
 "  }",
 "}"
 ].join("\n")

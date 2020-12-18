@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,6 +38,8 @@
 var Tilt = Tilt || {};
 var EXPORTED_SYMBOLS = ["Tilt.Arcball"];
 
+/*global vec3, mat3, mat4, quat4 */
+
 /**
  * Arcball constructor.
  * This is a general purpose 3D rotation controller described by Ken Shoemake
@@ -44,9 +49,11 @@ var EXPORTED_SYMBOLS = ["Tilt.Arcball"];
  * @param {Number} width: the width of canvas
  * @param {Number} height: the height of canvas
  * @param {Number} radius: optional, the radius of the arcball
+ * @param {Array} initialTrans: initial [x, y] translation
+ * @param {Array} initialRot: initial [x, y] rotation
  * @return {Tilt.Arcball} the newly created object
  */
-Tilt.Arcball = function(width, height, radius) {
+Tilt.Arcball = function(width, height, radius, initialTrans, initialRot) {
 
   // intercept this object using a profiler when building in debug mode
   Tilt.Profiler.intercept("Tilt.Arcball", this);
@@ -64,6 +71,9 @@ Tilt.Arcball = function(width, height, radius) {
    */
   this.$mouseButton = -1;
   this.$scrollValue = 0;
+  this.$scrollSpeed = 1;
+  this.$scrollMin = -3000;
+  this.$scrollMax = 500;
 
   /**
    * Array retaining the current pressed key codes.
@@ -96,8 +106,8 @@ Tilt.Arcball = function(width, height, radius) {
   /**
    * Additional rotation and translation vectors.
    */
-  this.$addKeyRot = [0, 0];
-  this.$addKeyTrans = [0, 0];
+  this.$addKeyRot = initialRot || [0, 0];
+  this.$addKeyTrans = initialTrans || [0, 0];
   this.$deltaKeyRot = quat4.create([0, 0, 0, 1]);
   this.$deltaKeyTrans = vec3.create();
 
@@ -116,14 +126,8 @@ Tilt.Arcball.prototype = {
    * @return {Object} the rotation quaternion and the zoom amount
    */
   loop: function(frameDelta) {
-    // if the frame delta wasn't specified, default to a small smoothstep
-    if ("undefined" === typeof frameDelta) {
-      frameDelta = 0.25;
-    }
-    else {
-      // this should be in the (0..1) interval
-      frameDelta = Tilt.Math.clamp(frameDelta / 100, 0.01, 0.99);
-    }
+    // this should be in the (0..1) interval
+    frameDelta = Tilt.Math.clamp((frameDelta || 25) * 0.01, 0.01, 0.99);
 
     // cache some variables for easier access
     var x, y,
@@ -165,7 +169,7 @@ Tilt.Arcball.prototype = {
     y = mouseLerp[1];
 
     // the smoothed arcball rotation may not be finished when the mouse is
-    // pressed again, so cancel the rotation if other events occur or the 
+    // pressed again, so cancel the rotation if other events occur or the
     // animation finishes
     if (mouseButton === 3 || x === mouseRelease[0] && y === mouseRelease[1]) {
       this.$rotating = false;
@@ -226,21 +230,21 @@ Tilt.Arcball.prototype = {
     }
 
     // mouse wheel handles zooming
-    deltaTrans[2] = (scrollValue - currentTrans[2]) / 10;
+    deltaTrans[2] = (scrollValue - currentTrans[2]) * 0.1;
     currentTrans[2] += deltaTrans[2];
 
     // handle additional rotation and translation by the keyboard
     if (keyCode[65]) { // w
-      addKeyRot[0] -= frameDelta / 5;
+      addKeyRot[0] -= frameDelta * 0.2;
     }
     if (keyCode[68]) { // s
-      addKeyRot[0] += frameDelta / 5;
+      addKeyRot[0] += frameDelta * 0.2;
     }
     if (keyCode[87]) { // a
-      addKeyRot[1] += frameDelta / 5;
+      addKeyRot[1] += frameDelta * 0.2;
     }
     if (keyCode[83]) { // d
-      addKeyRot[1] -= frameDelta / 5;
+      addKeyRot[1] -= frameDelta * 0.2;
     }
     if (keyCode[37]) { // left
       addKeyTrans[0] += frameDelta * 50;
@@ -255,6 +259,7 @@ Tilt.Arcball.prototype = {
       addKeyTrans[1] -= frameDelta * 50;
     }
 
+    // update the delta key rotations and translations
     deltaKeyRot[0] += (addKeyRot[0] - deltaKeyRot[0]) * frameDelta;
     deltaKeyRot[1] += (addKeyRot[1] - deltaKeyRot[1]) * frameDelta;
 
@@ -297,7 +302,7 @@ Tilt.Arcball.prototype = {
     var radius = this.$radius,
       width = this.$width,
       height = this.$height;
-    
+
     // find the sphere coordinates of the mouse positions
     this.pointToSphere(x, y, width, height, radius, this.$startVec);
     quat4.set(this.$currentRot, this.$lastRot);
@@ -335,6 +340,15 @@ Tilt.Arcball.prototype = {
   },
 
   /**
+   * Function handling the mouseOver event.
+   * Call this when the mouse enteres the context bounds.
+   */
+  mouseOver: function() {
+    // if the mouse just entered the parent bounds, stop the animation
+    this.$mouseButton = -1;
+  },
+
+  /**
    * Function handling the mouseOut event.
    * Call this when the mouse leaves the context bounds.
    */
@@ -350,11 +364,16 @@ Tilt.Arcball.prototype = {
    * @param {Number} scroll: the mouse wheel direction and speed
    */
   mouseScroll: function(scroll) {
+    var speed = this.$scrollSpeed,
+      min = this.$scrollMin,
+      max = this.$scrollMax;
+
     // clear any interval resetting or manipulating the arcball if set
     this.$clearInterval();
 
     // save the mouse scroll state and prepare for translations
-    this.$scrollValue -= scroll * 10;
+    this.$scrollValue = Tilt.Math.clamp(
+      this.$scrollValue - scroll * speed, min, max);
   },
 
   /**
@@ -394,8 +413,8 @@ Tilt.Arcball.prototype = {
    */
   pointToSphere: function(x, y, width, height, radius, sphereVec) {
     // adjust point coords and scale down to range of [-1..1]
-    x = (x - width / 2) / radius;
-    y = (y - height / 2) / radius;
+    x = (x - width * 0.5) / radius;
+    y = (y - height * 0.5) / radius;
 
     // compute the square length of the vector to the point from the center
     var normal = 0,
@@ -420,19 +439,22 @@ Tilt.Arcball.prototype = {
   },
 
   /**
-   * Resize this implementation to use different bounds.
-   * This function is automatically called when the arcball is created.
+   * Sets the minimum and maximum scrolling bounds.
    *
-   * @param {Number} width: the width of canvas
-   * @param {Number} height: the height of canvas
-   * @param {Number} radius: optional, the radius of the arcball
+   * @param {Number} min: the minimum scrolling bounds
+   * @param {Number} max: the maximum scrolling bounds
    */
-  resize: function(newWidth, newHeight, newRadius) {
-    // set the new width, height and radius dimensions
-    this.$width = newWidth;
-    this.$height = newHeight;
-    this.$radius = "undefined" !== typeof newRadius ? newRadius : newHeight;
-    this.$save();
+  setScrollBounds: function(min, max) {
+    this.$scrollMin = min;
+    this.$scrollMax = max;
+  },
+
+  /**
+   * Sets the scrolling (zooming) speed.
+   * @param {Number} speed: the speed
+   */
+  setScrollSpeed: function(speed) {
+    this.$scrollSpeed = speed;
   },
 
   /**
@@ -475,12 +497,28 @@ Tilt.Arcball.prototype = {
   },
 
   /**
+   * Resize this implementation to use different bounds.
+   * This function is automatically called when the arcball is created.
+   *
+   * @param {Number} width: the width of canvas
+   * @param {Number} height: the height of canvas
+   * @param {Number} radius: optional, the radius of the arcball
+   */
+  resize: function(newWidth, newHeight, newRadius) {
+    // set the new width, height and radius dimensions
+    this.$width = newWidth;
+    this.$height = newHeight;
+    this.$radius = newRadius ? newRadius : newHeight;
+    this.$save();
+  },
+
+  /**
    * Resets the rotation and translation to origin.
    * @param {Number} factor: the reset interpolation factor between frames
    */
   reset: function(factor) {
-    var inverse,
-      scrollValue = this.$scrollValue,
+    // cache the variables which will be reset
+    var scrollValue = this.$scrollValue,
       lastRot = this.$lastRot,
       deltaRot = this.$deltaRot,
       currentRot = this.$currentRot,
@@ -488,19 +526,25 @@ Tilt.Arcball.prototype = {
       deltaTrans = this.$deltaTrans,
       currentTrans = this.$currentTrans,
       addKeyRot = this.$addKeyRot,
-      addKeyTrans = this.$addKeyTrans;
+      addKeyTrans = this.$addKeyTrans,
+
+    // cache the vector and quaternion algebra functions
+    quat4inverse = quat4.inverse,
+    quat4slerp = quat4.slerp,
+    vec3scale = vec3.scale,
+    vec3length = vec3.length;
 
     // create an interval and smoothly reset all the values to identity
     this.$setInterval(function() {
-      inverse = quat4.inverse(lastRot);
+      var inverse = quat4inverse(lastRot);
 
       // reset the rotation quaternion and translation vector
-      quat4.slerp(lastRot, inverse, 1 - factor);
-      quat4.slerp(deltaRot, inverse, 1 - factor);
-      quat4.slerp(currentRot, inverse, 1 - factor);
-      vec3.scale(lastTrans, factor);
-      vec3.scale(deltaTrans, factor);
-      vec3.scale(currentTrans, factor);
+      quat4slerp(lastRot, inverse, 1 - factor);
+      quat4slerp(deltaRot, inverse, 1 - factor);
+      quat4slerp(currentRot, inverse, 1 - factor);
+      vec3scale(lastTrans, factor);
+      vec3scale(deltaTrans, factor);
+      vec3scale(currentTrans, factor);
 
       // reset any additional transforms by the keyboard or mouse
       addKeyRot[0] *= factor;
@@ -510,14 +554,14 @@ Tilt.Arcball.prototype = {
       this.$scrollValue *= factor;
 
       // clear the loop if the all values are very close to zero
-      if (vec3.length(lastRot) < 0.0001 &&
-          vec3.length(deltaRot) < 0.0001 &&
-          vec3.length(currentRot) < 0.0001 &&
-          vec3.length(lastTrans) < 0.01 &&
-          vec3.length(deltaTrans) < 0.01 &&
-          vec3.length(currentTrans) < 0.01 &&
-          vec3.length([addKeyRot[0], addKeyRot[1], scrollValue]) < 0.01 &&
-          vec3.length([addKeyTrans[0], addKeyTrans[1], scrollValue]) < 0.01) {
+      if (vec3length(lastRot) < 0.0001 &&
+          vec3length(deltaRot) < 0.0001 &&
+          vec3length(currentRot) < 0.0001 &&
+          vec3length(lastTrans) < 0.01 &&
+          vec3length(deltaTrans) < 0.01 &&
+          vec3length(currentTrans) < 0.01 &&
+          vec3length([addKeyRot[0], addKeyRot[1], scrollValue]) < 0.01 &&
+          vec3length([addKeyTrans[0], addKeyTrans[1], scrollValue]) < 0.01) {
         this.$clearInterval();
       }
     }.bind(this), 1000 / 60);

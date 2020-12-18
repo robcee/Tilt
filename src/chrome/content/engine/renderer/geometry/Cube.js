@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -41,11 +44,12 @@ var EXPORTED_SYMBOLS = ["Tilt.Cube"];
  * @param {Number} width: the width of the cube
  * @param {Number} height: the height of the cube
  * @param {Number} depth: the depth of the cube
+ * @return {Tilt.Cube} the newly created object
  */
 Tilt.Cube = function(width, height, depth) {
 
   // intercept this object using a profiler when building in debug mode
-  Tilt.Profiler.intercept("Tilt.Cube", this);  
+  Tilt.Profiler.intercept("Tilt.Cube", this);
 
   // make sure the width, height and depth are valid number values
   width = width || 1;

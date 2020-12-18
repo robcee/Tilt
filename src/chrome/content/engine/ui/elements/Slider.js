@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -50,6 +53,7 @@ var EXPORTED_SYMBOLS = ["Tilt.Slider"];
  *  @param {Function} onmousedown: function called when the event is triggered
  *  @param {Function} onmouseup: function called when the event is triggered
  *  @param {Function} onclick: function called when the event is triggered
+ * @return {Tilt.Slider} the newly created object
  */
 Tilt.Slider = function(sprite, properties) {
 
@@ -234,7 +238,8 @@ Tilt.Slider.prototype = {
    * @param {Tilt.Renderer} tilt: optional, a reference to a Tilt.Renderer
    */
   update: function(frameDelta, tilt) {
-    var ui = Tilt.UI;
+    var ui = Tilt.UI,
+      sprite, px, py, x, y, size, direction, xps, yps, p, pmpx, pmpy;
 
     // if the mouse was pressed over the handler, begin sliding
     if (this.mousePressed) {
@@ -247,13 +252,13 @@ Tilt.Slider.prototype = {
 
     // if we're currently sliding, update this object's internal params
     if (this.$sliding) {
-      var sprite = this.$sprite,
-        px = this.$parentX,
-        py = this.$parentY,
-        x = this.$x,
-        y = this.$y,
-        size = this.$size,
-        direction = this.$direction, xps, yps, p, pmpx;
+      sprite = this.$sprite;
+      px = this.$parentX;
+      py = this.$parentY;
+      x = this.$x;
+      y = this.$y;
+      size = this.$size;
+      direction = this.$direction;
 
       // depending on the direction, move the handler along the x or y axis
       if (direction === 0) {
@@ -261,7 +266,7 @@ Tilt.Slider.prototype = {
         xps = x + size;
 
         // clamp the handler position between the left and right edges
-        p = Tilt.Math.clamp(ui.mouseX - sprite.$width / 2, x, xps);
+        p = Tilt.Math.clamp(ui.mouseX - sprite.$width * 0.5, x, xps);
         pmpx = p - px;
 
         // set the sprite x position and update the value and bounds
@@ -274,7 +279,7 @@ Tilt.Slider.prototype = {
         yps = y + size;
 
         // clamp the handler position between the top and bottom edges
-        p = Tilt.Math.clamp(ui.$mouseY - sprite.$height / 2, y, yps);
+        p = Tilt.Math.clamp(ui.$mouseY - sprite.$height * 0.5, y, yps);
         pmpy = p - py;
 
         // set the sprite y position and update the value and bounds

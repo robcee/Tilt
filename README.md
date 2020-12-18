@@ -2,6 +2,14 @@
 #### [Development Blog](http://blog.mozilla.com/tilt/)
 #### [Tilt Project Page](https://wiki.mozilla.org/Tilt_Project_Page)
 
+### Firefox integration
+Tilt is currently implemented natively in Firefox starting with version 11, part of the Developer Tools -> Inspector. You can track the development in the [mozilla-central branch](https://github.com/victorporof/Tilt/tree/mozilla-central). If you have a Bugzilla account, [here are all the known bugs and features](https://bugzilla.mozilla.org/buglist.cgi?cmdtype=runnamed&namedcmd=tilt&list_id=1947264) we're working on - you're welcome to file new requests in there or even help out if you want to!
+
+Take a look at [Firefox Aurora](http://www.mozilla.org/en-US/firefox/channel/) or [Firefox Nightly](http://nightly.mozilla.org/) to try out the new and improved Tilt!
+
+### Help
+If you have any questions, ping anyone on IRC in `#devtools` or `#tilt` on [irc.mozilla.org](irc://irc.mozilla.org).
+
 ### Installation
 In the bin folder you will find the latest [Tilt.xpi](https://github.com/victorporof/Tilt/raw/master/bin/Tilt.xpi) extension build. Download, then drag and drop it to Firefox. After the installation is complete, restart, and open the extension using `Ctrl+Shift+M` (or `Cmd+Shift+M` if you're on a mac), or find it inside the Tools menu. Close it at any time with the `Esc` key.
 
@@ -12,12 +20,7 @@ In the bin folder you will find the latest [Tilt.xpi](https://github.com/victorp
 
 > It is being developed by [Victor Porof](http://twitter.com/victorporof) (3D developer responsible with the Firefox extension itself), along with [Cedric Vivier](https://github.com/neonux) (creating a WebGL optimized equivalent to the privileged canvas.drawWindow, see [#653656](https://bugzilla.mozilla.org/show_bug.cgi?id=653656)) and [Rob Campbell](https://github.com/robcee) (who first thought about creating a 3D visualization of a webpage). Everything started initially as a [Google Summer of Code](http://www.google-melange.com/gsoc/proposal/review/google/gsoc2011/victorporof/1#) project, but now, with an enthusiastic team behind it and so many new features and ideas, it has become an active Developer Tools project.
 
-<center>
-![Screenshot](http://dl.dropbox.com/u/2388316/tilt/tilt01.png)
-</center>
-
-### Help
-If you have any questions, ping anyone on IRC in `#tilt` on [irc.mozilla.org](irc://irc.mozilla.org)
+<center>![Screenshot](http://dl.dropbox.com/u/2388316/tilt/tilt02.png)</center>
 
 ### License
 Tilt is licensed as Mozilla Public License Version 1.1, like any other Mozilla
@@ -37,10 +40,10 @@ Alternatively, you can just use the `engine` or `extension` param to build only 
 ./build extension
 ```
 
-You can append the `minify` parameter to minify the sources when building, but this is recommended only when building a final release, as it takes quite a lot of time.
-The compiled files are in the [bin](https://github.com/victorporof/Tilt/tree/master/bin) folder. If the extension was also built, inside [build](https://github.com/victorporof/Tilt/tree/master/bin/build) you can find the unpacked [Tilt.xpi](https://github.com/victorporof/Tilt/raw/master/bin/Tilt.xpi) archive.
+You can append the `minify` and/or `optimize` parameter to minify and optimize the sources when building, but this is recommended only for a final release, as it takes quite a lot of time.
+The output files are in the [bin](https://github.com/victorporof/Tilt/tree/master/bin) folder. If the extension was also built, inside [build](https://github.com/victorporof/Tilt/tree/master/bin/build) you can find the unpacked [Tilt.xpi](https://github.com/victorporof/Tilt/raw/master/bin/Tilt.xpi) archive.
 
-Tilt uses the [Google Closure compiler](https://github.com/victorporof/Tilt/tree/master/bin/google-closure) to minify the Javascript files, with the `--compilation_level ADVANCED_OPTIMIZATIONS` flag. Therefore, some [Javascript externs](https://github.com/victorporof/Tilt/blob/master/bin/google-closure/tilt-externs.jsext) must be specified so important variable names are not renamed.
+Tilt uses the [Google Closure compiler](https://github.com/victorporof/Tilt/tree/master/bin/google-closure) to optimize the Javascript files, with the `--compilation_level ADVANCED_OPTIMIZATIONS` flag. Therefore, some [Javascript externs](https://github.com/victorporof/Tilt/blob/master/bin/google-closure/tilt-externs.jsext) must be specified so important variable names are not renamed.
 
 ## How to automatically install
 To install the extension automatically in Firefox with the `make install` or `./build` command, first edit the [makefile](https://github.com/victorporof/Tilt/blob/master/src/Makefile) and change the `profile_dir` to match your profile in Firefox. If you don't do this, installation will fail. Additionally, you may need to have the `tilt@mozilla.com` folder created in the extension profile directory, depending on the OS and Firefox version. After this quick setup (provided you already compiled everything with `./build`), run the following command to install the extension:
@@ -49,10 +52,10 @@ To install the extension automatically in Firefox with the `make install` or `./
 export OSTYPE; make install;
 ```
 
-Or, to automatically compile everything, minify and also install:
+Or, to automatically minify everything, optimize and also install:
 
 ```
-./build all minify install
+./build all minify optimize install
 ```
 
 ## WebGL engine
@@ -138,7 +141,7 @@ TiltChrome.Controller.MyCustomController = function() {
 ```
 
 ## Implement a custom UI
-Just like the controller, the user interface is initialized when constructing the visualization. The current <b>work in progress</b> implementation is in [TiltChromeUI.js](https://github.com/victorporof/Tilt/blob/master/src/chrome/content/TiltChromeUI.js). You can implement your own user interface by creating a new object respecting a predefined interface. 
+Just like the controller, the user interface is initialized when constructing the visualization. The current <b>work in progress</b> implementation is in [TiltChromeUI.js](https://github.com/victorporof/Tilt/blob/master/src/chrome/content/TiltChromeUI.js). You can implement your own user interface by creating a new object respecting a predefined interface.
 
 Each UI should have the `init`, `draw`, `resize` and `destroy` functions. Moreover, you can specify events like `domVisualizationMeshNodeCallback` or `meshNodeCallback`, or `meshReadyCallback` handled automatically by the visualization.
 

@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -44,7 +47,7 @@ Tilt.Shaders = {};
  * @param {Uniform} mvMatrix: the model view matrix
  * @param {Uniform} projMatrix: the projection matrix
  * @param {Uniform} color: the color to set the gl_FragColor to
- */  
+ */
 Tilt.Shaders.Color = {
 
   /**
@@ -77,7 +80,7 @@ Tilt.Shaders.Color = {
 ].join("\n")
 };
 
-/** 
+/**
  * A simple texture shader. It uses one sampler and a uniform color.
  *
  * @param {Attribute} vertexPosition: the vertex position

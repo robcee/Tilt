@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -34,6 +37,8 @@
 
 var Tilt = Tilt || {};
 var EXPORTED_SYMBOLS = ["Tilt.Renderer"];
+
+/*global vec3, mat3, mat4, quat4 */
 
 /**
  * Tilt.Renderer constructor.
@@ -56,10 +61,7 @@ Tilt.Renderer = function(canvas, properties) {
    * The WebGL context obtained from the canvas element, used for drawing.
    */
   this.canvas = canvas;
-  this.gl = this.create3DContext(canvas, {
-    antialias: true,
-    stencil: true
-  });
+  this.gl = this.create3DContext(canvas);
 
   // first, clear the cache
   Tilt.clearCache();
@@ -68,6 +70,11 @@ Tilt.Renderer = function(canvas, properties) {
 
   // check if the context was created successfully
   if ("undefined" !== typeof this.gl && this.gl !== null) {
+
+    // if successful, run a success callback function if available
+    if ("function" === typeof properties.onsuccess) {
+      properties.onsuccess();
+    }
 
     // set up some global enums
     this.TRIANGLES = this.gl.TRIANGLES;
@@ -81,24 +88,47 @@ Tilt.Renderer = function(canvas, properties) {
     this.DEPTH_BUFFER_BIT = this.gl.DEPTH_BUFFER_BIT;
     this.STENCIL_BUFFER_BIT = this.gl.STENCIL_BUFFER_BIT;
 
+    // set the default clear color and depth buffers
     this.gl.clearColor(0, 0, 0, 1);
     this.gl.clearDepth(1);
-    this.gl.clearStencil(0);
-
-    // if successful, run a success callback function if available
-    if ("function" === typeof properties.success) {
-      properties.onsuccess();
-    }
   }
   else {
     // if unsuccessful, log the error and run a fail callback if available
     Tilt.Console.log(Tilt.StringBundle.get("initWebGL.error"));
 
-    if ("function" === typeof properties.fail) {
+    if ("function" === typeof properties.onfail) {
       properties.onfail();
       return;
     }
   }
+
+  /**
+   * Helpers for managing variables like frameCount, frameRate, frameDelta,
+   * used internally, in the requestAnimFrame function.
+   */
+  this.$lastTime = 0;
+  this.$currentTime = null;
+
+  /**
+   * Time passed since initialization.
+   */
+  this.elapsedTime = 0;
+
+  /**
+   * Counter for the number of frames passed since initialization.
+   */
+  this.frameCount = 0;
+
+  /**
+   * Variable retaining the current frame rate.
+   */
+  this.frameRate = 0;
+
+  /**
+   * Variable representing the delta time elapsed between frames.
+   * Use this to create smooth animations regardless of the frame rate.
+   */
+  this.frameDelta = 0;
 
   /**
    * Variables representing the current framebuffer width and height.
@@ -174,34 +204,6 @@ Tilt.Renderer = function(canvas, properties) {
   this.$cube = new Tilt.Cube();
   this.$cubeWireframe = new Tilt.CubeWireframe();
 
-  /**
-   * Helpers for managing variables like frameCount, frameRate, frameDelta,
-   * used internally, in the requestAnimFrame function.
-   */
-  this.$lastTime = 0;
-  this.$currentTime = null;
-
-  /**
-   * Time passed since initialization.
-   */
-  this.elapsedTime = 0;
-
-  /**
-   * Counter for the number of frames passed since initialization.
-   */
-  this.frameCount = 0;
-
-  /**
-   * Variable retaining the current frame rate.
-   */
-  this.frameRate = 0;
-
-  /**
-   * Variable representing the delta time elapsed between frames.
-   * Use this to create smooth animations regardless of the frame rate.
-   */
-  this.frameDelta = 0;
-
   // set the default model view and projection matrices
   this.origin();
   this.perspective();
@@ -247,9 +249,7 @@ Tilt.Renderer.prototype = {
     }
 
     // clear the color and depth buffers
-    gl.clear(gl.COLOR_BUFFER_BIT |
-             gl.DEPTH_BUFFER_BIT |
-             gl.STENCIL_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   },
 
   /**
@@ -407,6 +407,19 @@ Tilt.Renderer.prototype = {
   },
 
   /**
+   * Rotates the model view by specified angles on the x, y, and z axis.
+   *
+   * @param {Number} x: the x axis rotation
+   * @param {Number} y: the y axis rotation
+   * @param {Number} z: the z axis rotation
+   */
+  rotateXYZ: function(x, y, z) {
+    mat4.rotateX(this.mvMatrix, x);
+    mat4.rotateY(this.mvMatrix, y);
+    mat4.rotateZ(this.mvMatrix, z);
+  },
+
+  /**
    * Scales the model view by the x, y and z coordinates.
    *
    * @param {Number} x: the x amount of scaling
@@ -422,7 +435,13 @@ Tilt.Renderer.prototype = {
    * @param {String} color: the color, defined in hex or as rgb() or rgba()
    */
   tint: function(color) {
-    this.$tintColor = Tilt.Math.hex2rgba(color);
+    var rgba = Tilt.Math.hex2rgba(color),
+      tint = this.$tintColor;
+
+    tint[0] = rgba[0];
+    tint[1] = rgba[1];
+    tint[2] = rgba[2];
+    tint[3] = rgba[3];
   },
 
   /**
@@ -441,7 +460,13 @@ Tilt.Renderer.prototype = {
    * @param {String} color: the color, defined in hex or as rgb() or rgba()
    */
   fill: function(color) {
-    this.$fillColor = Tilt.Math.hex2rgba(color);
+    var rgba = Tilt.Math.hex2rgba(color),
+      fill = this.$fillColor;
+
+    fill[0] = rgba[0];
+    fill[1] = rgba[1];
+    fill[2] = rgba[2];
+    fill[3] = rgba[3];
   },
 
   /**
@@ -460,7 +485,13 @@ Tilt.Renderer.prototype = {
    * @param {String} color: the color, defined in hex or as rgb() or rgba()
    */
   stroke: function(color) {
-    this.$strokeColor = Tilt.Math.hex2rgba(color);
+    var rgba = Tilt.Math.hex2rgba(color),
+      stroke = this.$strokeColor;
+
+    stroke[0] = rgba[0];
+    stroke[1] = rgba[1];
+    stroke[2] = rgba[2];
+    stroke[3] = rgba[3];
   },
 
   /**
@@ -489,7 +520,7 @@ Tilt.Renderer.prototype = {
    * Sets blending, either "alpha" or "add" (additive blending).
    * Anything else disables blending.
    *
-   * @param {String} mode: blending, either "alpha", "add" or undefined
+   * @param {String} mode: blending, either "alpha", "add" or falsy
    */
   blendMode: function(mode) {
     var gl = this.gl;
@@ -603,9 +634,11 @@ Tilt.Renderer.prototype = {
    * @param {Array} v2: the [x, y, z] position of the third triangle point
    */
   triangle: function(v0, v1, v2) {
-    var vertices = new Tilt.VertexBuffer(v0.concat(v1, v2), 3),
-      fill = this.$fillColor,
-      stroke = this.$strokeColor;
+    var fill = this.$fillColor,
+      stroke = this.$strokeColor,
+      vertices = new Tilt.VertexBuffer([v0[0], v0[1], v0[2] || 0,
+                                        v1[0], v1[1], v1[2] || 0,
+                                        v2[0], v2[1], v2[2] || 0], 3);
 
     // draw the triangle only if the fill alpha channel is not transparent
     if (fill[3]) {
@@ -637,10 +670,10 @@ Tilt.Renderer.prototype = {
   quad: function(v0, v1, v2, v3) {
     var fill = this.$fillColor,
       stroke = this.$strokeColor,
-      vertices = new Tilt.VertexBuffer([v0[0], v0[1], v0[2],
-                                        v1[0], v1[1], v1[2],
-                                        v2[0], v2[1], v2[2],
-                                        v3[0], v3[1], v3[2]], 3);
+      vertices = new Tilt.VertexBuffer([v0[0], v0[1], v0[2] || 0,
+                                        v1[0], v1[1], v1[2] || 0,
+                                        v2[0], v2[1], v2[2] || 0,
+                                        v3[0], v3[1], v3[2] || 0], 3);
 
     // draw the quad only if the fill alpha channel is not transparent
     if (fill[3]) {
@@ -685,7 +718,9 @@ Tilt.Renderer.prototype = {
     var rectangle = this.$rectangle,
       wireframe = this.$rectangleWireframe,
       fill = this.$fillColor,
-      stroke = this.$strokeColor;
+      stroke = this.$strokeColor,
+      vertices = rectangle.vertices,
+      wvertices = wireframe.vertices;
 
     // if rectMode is set to "center", we need to offset the origin
     if ("center" === this.$rectangle.rectModeValue) {
@@ -702,15 +737,15 @@ Tilt.Renderer.prototype = {
     // draw the rectangle only if the fill alpha channel is not transparent
     if (fill[3]) {
       // use the necessary shader and draw the vertices
-      this.useColorShader(rectangle.vertices, fill);
-      this.drawVertices(this.TRIANGLE_STRIP, rectangle.vertices.numItems);
+      this.useColorShader(vertices, fill);
+      this.drawVertices(this.TRIANGLE_STRIP, vertices.numItems);
     }
 
     // draw the outline only if the stroke alpha channel is not transparent
     if (stroke[3]) {
       // use the necessary shader and draw the vertices
-      this.useColorShader(wireframe.vertices, stroke);
-      this.drawVertices(this.LINE_LOOP, wireframe.vertices.numItems);
+      this.useColorShader(wvertices, stroke);
+      this.drawVertices(this.LINE_LOOP, wvertices.numItems);
     }
 
     this.popMatrix();
@@ -747,6 +782,7 @@ Tilt.Renderer.prototype = {
     var rectangle = this.$rectangle,
       tint = this.$tintColor,
       stroke = this.$strokeColor,
+      vertices = rectangle.vertices,
       texCoordBuffer = texCoord || rectangle.texCoord;
 
     // if the width and height are not specified, we use the embedded
@@ -758,8 +794,8 @@ Tilt.Renderer.prototype = {
 
     // if imageMode is set to "center", we need to offset the origin
     if ("center" === rectangle.imageModeValue) {
-      x -= width / 2;
-      y -= height / 2;
+      x -= width * 0.5;
+      y -= height * 0.5;
     }
 
     // draw the image only if the tint alpha channel is not transparent
@@ -771,8 +807,8 @@ Tilt.Renderer.prototype = {
       this.scale(width, height, 1);
 
       // use the necessary shader and draw the vertices
-      this.useTextureShader(rectangle.vertices, texCoordBuffer, tint, tex);
-      this.drawVertices(this.TRIANGLE_STRIP, rectangle.vertices.numItems);
+      this.useTextureShader(vertices, texCoordBuffer, tint, tex);
+      this.drawVertices(this.TRIANGLE_STRIP, vertices.numItems);
 
       this.popMatrix();
     }
@@ -854,22 +890,22 @@ Tilt.Renderer.prototype = {
    *
    * @param {HTMLCanvasElement} canvas: the canvas to get the WebGL context
    * @param {Object} opt_attribs: optional attributes used for initialization
+   * @reuturn {Object} the WebGL context, or undefined if anything failed
    */
   create3DContext: function(canvas, opt_attribs) {
-    var names = ["experimental-webgl", "webgl", "webkit-3d", "moz-webgl"];
-    var context, i, len;
+    var names = ["experimental-webgl", "webgl", "webkit-3d", "moz-webgl"],
+      context, i, len;
 
-    for (i = 0, len = names.length; i < len; ++i) {
-      try {
-        context = canvas.getContext(names[i], opt_attribs);
-      }
-      catch(e) {}
-
-      if (context) {
-        break;
+    for (i = 0, len = names.length; i < len; i++) {
+      try { context = canvas.getContext(names[i], opt_attribs); } catch(e) {}
+      finally {
+        if (context) {
+          return context;
+        }
       }
     }
-    return context;
+
+    return undefined;
   },
 
   /**
@@ -887,36 +923,39 @@ Tilt.Renderer.prototype = {
    *      draw();
    *
    * @param {Function} draw: the function to be called each frame
+   * @param {Boolean} debug: true if params like frame rate and frame delta
+   * should be calculated
    */
-  loop: function(draw) {
+  loop: function(draw, debug) {
     window.requestAnimFrame(draw);
 
     // reset the model view and projection matrices
     this.perspective();
 
-    // calculate the frame delta and frame rate using the current time
-    this.$currentTime = new Date().getTime();
-
-    if (this.$lastTime !== 0) {
-      this.frameDelta = this.$currentTime - this.$lastTime;
-      this.frameRate = 1000 / this.frameDelta;
-    }
-    this.$lastTime = this.$currentTime;
-
-    // increment the elapsed time and total frame count
-    this.elapsedTime += this.frameDelta;
+    // increment the total frame count
     this.frameCount++;
 
-    // clear the cache associated with the shaders
-    // this.colorShader.clearCache();
-    // this.textureShader.clearCache();
+    // only compute debugging variables if we really want to
+    if (debug) {
+
+      // calculate the frame delta and frame rate using the current time
+      this.$currentTime = new Date().getTime();
+      if (this.$lastTime !== 0) {
+        this.frameDelta = this.$currentTime - this.$lastTime;
+        this.frameRate = 1000 / this.frameDelta;
+      }
+
+      // increase the elapsed time based on the frame delta
+      this.$lastTime = this.$currentTime;
+      this.elapsedTime += this.frameDelta;
+    }
   },
 
   /**
    * Clears the Tilt cache, destroys this object and deletes all members.
    */
   destroy: function() {
-    Tilt.destroyObject(this);
     Tilt.clearCache();
+    Tilt.destroyObject(this);
   }
 };

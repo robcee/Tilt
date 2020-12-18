@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -34,6 +37,9 @@
 
 var TiltChrome = TiltChrome || {};
 var EXPORTED_SYMBOLS = ["TiltChrome.UI.Default"];
+
+/*global Tilt */
+/*jshint sub: true, undef: false, onevar: false */
 
 /**
  * Default UI implementation.
@@ -89,6 +95,7 @@ TiltChrome.UI.Default = function() {
   pStripButton = null,
   aStripButton = null,
   imgStripButton = null,
+  iframeStripButton = null,
   otherStripButton = null,
 
   /**
@@ -141,6 +148,10 @@ TiltChrome.UI.Default = function() {
    * @param {HTMLCanvasElement} canvas: the canvas element
    */
   this.init = function(canvas) {
+    if (!canvas) {
+      return;
+    }
+
     t = new Tilt.Texture("chrome://tilt/skin/tilt-ui.png", {
       minFilter: "nearest",
       magFilter: "nearest",
@@ -174,10 +185,10 @@ TiltChrome.UI.Default = function() {
       y: -5,
       padding: [0, 0, 0, 5],
       onclick: function() {
-        var helpX = canvas.width / 2 - 305,
-          helpY = canvas.height / 2 - 305,
-          exitX = canvas.width / 2 + 197,
-          exitY = canvas.height / 2 - 218;
+        var helpX = canvas.width * 0.5 - 305,
+          helpY = canvas.height * 0.5 - 305,
+          exitX = canvas.width * 0.5 + 197,
+          exitY = canvas.height * 0.5 - 218;
 
         helpBoxSprite.setPosition(helpX, helpY);
         helpCloseButon.setPosition(exitX, exitY);
@@ -190,11 +201,13 @@ TiltChrome.UI.Default = function() {
       y: -5,
       padding: [0, 0, 0, 5],
       onclick: function() {
-        var folder = Tilt.File.showPicker("folder");
+        var folderPicker = Tilt.StringBundle.get("folderPicker.string"),
+          webpageFilename = Tilt.StringBundle.get("webpageFilename.string"),
+          folder = Tilt.File.showPicker(folderPicker, "folder");
 
         if (folder) {
           folder.reveal();
-          this.visualization.performMeshSave(folder.path, "webpage");
+          this.visualization.performMeshSave(folder.path, webpageFilename);
         }
       }.bind(this)
     });
@@ -204,7 +217,11 @@ TiltChrome.UI.Default = function() {
       y: -5,
       padding: [0, 0, 0, 5],
       onclick: function() {
-        Tilt.Console.alert("Tilt", Tilt.StringBundle.get("implement.info"));
+        window.open("chrome://tilt/content/TiltChromeOptions.xul", "Options",
+          "chrome, modal, centerscreen, width=410, height=320");
+
+        TiltChrome.Config.Visualization.reload();
+        TiltChromeEntryPoint.refreshKeyset();
       }.bind(this)
     });
 
@@ -268,7 +285,8 @@ TiltChrome.UI.Default = function() {
 
     arcballSprite = new Tilt.Sprite(t, [0, 0, 145, 145], {
       x: 0,
-      y: 0
+      y: 0,
+      disabled: true
     });
 
     arcballUpButton = new Tilt.Button(null, {
@@ -366,9 +384,9 @@ TiltChrome.UI.Default = function() {
       }.bind(this)
     });
 
-    domStripsLegend = new Tilt.Sprite(t, [1, 365, 88, 333], {
+    domStripsLegend = new Tilt.Sprite(t, [1, 324, 89, 354], {
       x: 0,
-      y: 292,
+      y: 293,
       disabled: true
     });
 
@@ -378,14 +396,15 @@ TiltChrome.UI.Default = function() {
       width: 130,
       height: canvas.height - 310,
       background: "#0001",
-      top: new Tilt.Sprite(t, [506, 69, 33, 30], {
-        padding: [4, 4, 4, 8]
+      scrollable: [0, Math.MAX_VALUE],
+      top: new Tilt.Sprite(t, [45, 222, 33, 30], {
+        padding: [2, 2, 2, 4]
       }),
-      bottom: new Tilt.Sprite(t, [506, 102, 33, 30], {
-        padding: [4, 4, 4, 8]
+      bottom: new Tilt.Sprite(t, [45, 255, 33, 30], {
+        padding: [2, 2, 2, 4]
       }),
-      reset: new Tilt.Sprite(t, [506, 134, 33, 30], {
-        padding: [4, 8, 4, 4]
+      reset: new Tilt.Sprite(t, [45, 289, 33, 30], {
+        padding: [2, 4, 2, 2]
       })
     });
 
@@ -554,9 +573,20 @@ TiltChrome.UI.Default = function() {
       }
     });
 
-    otherStripButton = new Tilt.Button(null, {
+    iframeStripButton = new Tilt.Button(null, {
       x: 5,
       y: imgStripButton.getY() + 20,
+      width: 14,
+      height: 14,
+      fill: config.domStrips["iframe"].fill,
+      onclick: function() {
+        showColorPicker(config.domStrips["iframe"], iframeStripButton);
+      }
+    });
+
+    otherStripButton = new Tilt.Button(null, {
+      x: 5,
+      y: iframeStripButton.getY() + 20,
       width: 14,
       height: 14,
       fill: config.domStrips["other"].fill,
@@ -683,15 +713,15 @@ TiltChrome.UI.Default = function() {
       window.clearInterval(this.$sliderMove);
       this.$sliderMove = window.setInterval(function() {
         var rgba = Tilt.Math.hsv2rgb(
-          hueSlider.getValue() / 100,
-          saturationSlider.getValue() / 100,
-          brightnessSlider.getValue() / 100),
-          textureAlpha = textureSlider.getValue() / 100;
+          hueSlider.getValue() * 0.01,
+          saturationSlider.getValue() * 0.01,
+          brightnessSlider.getValue() * 0.01),
+          textureAlpha = textureSlider.getValue() * 0.01;
 
         rgba[0] /= 255;
         rgba[1] /= 255;
         rgba[2] /= 255;
-        rgba[3] = alphaSlider.getValue() / 100;
+        rgba[3] = alphaSlider.getValue() * 0.01;
 
         this.visualization.setMeshColor(rgba);
         this.visualization.setMeshTextureAlpha(textureAlpha);
@@ -742,7 +772,7 @@ TiltChrome.UI.Default = function() {
     hideableElements.push(
       helpButton, exportButton, optionsButton,
       htmlButton, cssButton, attrButton,
-      resetButton, zoomInButton, zoomOutButton, arcballSprite, 
+      resetButton, zoomInButton, zoomOutButton, arcballSprite,
       arcballUpButton, arcballDownButton,
       arcballLeftButton, arcballRightButton,
       viewModeButton, colorAdjustButton, domStripsLegend,
@@ -761,7 +791,15 @@ TiltChrome.UI.Default = function() {
       pStripButton,
       aStripButton,
       imgStripButton,
+      iframeStripButton,
       otherStripButton);
+
+    if (TiltChrome.Config.Visualization.hideUserInterfaceAtInit) {
+      eyeButton.onclick();
+    }
+    if (TiltChrome.Config.Visualization.disableMinidomAtInit) {
+      minidomContainer.view.hidden = true;
+    }
   };
 
   /**
@@ -797,7 +835,7 @@ TiltChrome.UI.Default = function() {
   };
 
   /**
-   * EFunction called automatically when the color picker panel popup hiding.
+   * Function called automatically when the color picker panel popup hiding.
    */
   this.panelPickerHidden = function() {
     var hex = TiltChrome.BrowserOverlay.colorPicker.
@@ -811,14 +849,23 @@ TiltChrome.UI.Default = function() {
   };
 
   /**
-   * Function called for each node in the dom tree
-   * 
+   * Function called for each node in the dom tree.
+   *
    * @param {HTMLNode} node: the dom node
    * @param {Number} depth: the node depth in the dom tree
    * @param {Number} index: the index of the node in the dom tree
    * @param {Number} uid: a unique id for the node
    */
   this.meshNodeCallback = function(node, depth, index, uid) {
+    if (TiltChrome.Config.Visualization.disableMinidomAtInit) {
+      return;
+    }
+
+    if (minidomContainer.$loaded) {
+      minidomContainer.$loaded = false;
+      minidomContainer.view.clear();
+      this.stripNo = 0;
+    }
     if ("undefined" === typeof this.stripNo) {
       this.stripNo = 0;
     }
@@ -830,14 +877,14 @@ TiltChrome.UI.Default = function() {
       x = 3 + depth * 6,
       y = 3 + stripNo * 10,
       height = 7,
-      stripButton, stripIdButton, stripClassButton, right,
+      stripButton, stripIdButton, stripClassButton, right, bottom,
 
-    namelength = Tilt.Math.clamp(node.localName.length, 3, 10),
-    clslength = Tilt.Math.clamp(node.localName.length, 3, 10),
-    idlength = Tilt.Math.clamp(node.id.length, 3, 10),
+    namelength = Tilt.Math.clamp(node.localName.length, 4, 10),
+    idlength = Tilt.Math.clamp(node.id.length, 4, 10),
+    clslength = Tilt.Math.clamp(node.className.length, 4, 10),
 
-    clsx = x + namelength * 10 + 3,
-    idx = clsx + clslength * 3 + 3;
+    idx = x + namelength * 10 + 3,
+    clsx = idx + idlength * 2 + 3;
 
     stripButton = new Tilt.Button(null, {
       x: x,
@@ -849,26 +896,13 @@ TiltChrome.UI.Default = function() {
     });
 
     right = stripButton.getX() + stripButton.getWidth();
-
-    if (node.className) {
-      stripClassButton = new Tilt.Button(null, {
-        x: clsx,
-        y: y,
-        width: clslength * 3,
-        height: height,
-        padding: [-1, -1, -1, -1],
-        stroke: stripButton.getStroke()
-      });
-
-      right = Math.max(right,
-        stripClassButton.getX() + stripClassButton.getWidth());
-    }
+    bottom = stripButton.getY() + stripButton.getHeight() * 2;
 
     if (node.id) {
       stripIdButton = new Tilt.Button(null, {
         x: idx,
         y: y,
-        width: idlength * 3,
+        width: idlength * 2,
         height: height,
         padding: [-1, -1, -1, -1],
         stroke: stripButton.getStroke()
@@ -878,9 +912,24 @@ TiltChrome.UI.Default = function() {
         stripIdButton.getX() + stripIdButton.getWidth());
     }
 
+    if (node.className) {
+      stripClassButton = new Tilt.Button(null, {
+        x: clsx,
+        y: y,
+        width: clslength * 2,
+        height: height,
+        padding: [-1, -1, -1, -1],
+        stroke: stripButton.getStroke()
+      });
+
+      right = Math.max(right,
+        stripClassButton.getX() + stripClassButton.getWidth());
+    }
+
     if (right > minidomContainer.view.getWidth()) {
       minidomContainer.view.setWidth(right);
     }
+    minidomContainer.bottom = bottom;
 
     if (stripButton) {
       minidomContainer.view.push(stripButton);
@@ -906,23 +955,23 @@ TiltChrome.UI.Default = function() {
       }.bind(this);
     }
 
-    if (stripClassButton) {
-      minidomContainer.view.push(stripClassButton);
-      stripClassButton.setFill(stripButton.getFill());
-      stripClassButton.localName = node.localName;
-
-      stripClassButton.onclick = function() {
-        this.visualization.setAttributesEditor();
-        this.visualization.openEditor(uid);
-      }.bind(this);
-    }
-
     if (stripIdButton) {
       minidomContainer.view.push(stripIdButton);
       stripIdButton.setFill(stripButton.getFill());
       stripIdButton.localName = node.localName;
 
       stripIdButton.onclick = function() {
+        this.visualization.setAttributesEditor();
+        this.visualization.openEditor(uid);
+      }.bind(this);
+    }
+
+    if (stripClassButton) {
+      minidomContainer.view.push(stripClassButton);
+      stripClassButton.setFill(stripButton.getFill());
+      stripClassButton.localName = node.localName;
+
+      stripClassButton.onclick = function() {
         this.visualization.setAttributesEditor();
         this.visualization.openEditor(uid);
       }.bind(this);
@@ -936,7 +985,9 @@ TiltChrome.UI.Default = function() {
    * @param {Number} totalNodes: the total nodes in the dom tree
    */
   this.meshReadyCallback = function(maxDepth, totalNodes) {
-    var name, domColor;
+    if (TiltChrome.Config.Visualization.disableMinidomAtInit) {
+      return;
+    }
 
     // for each element in the dom strips container, update it's fill to match
     // the strip color code for the correspoding dom element
@@ -944,15 +995,18 @@ TiltChrome.UI.Default = function() {
 
       // the head and body use an identical color code by default
       var name = (element.localName !== "head" &&
-                  element.localName !== "body") ? 
+                  element.localName !== "body") ?
                   element.localName : "head/body",
 
-      // the color settings may or not be specified for the current node name 
+      // the color settings may or not be specified for the current node name
       settings = config.domStrips[name] ||
                  config.domStrips["other"];
 
       element.setFill(settings.fill);
     });
+
+    // set a flag for the minidom container
+    minidomContainer.$loaded = true;
   };
 
   /**
@@ -981,6 +1035,11 @@ TiltChrome.UI.Default = function() {
     this.visualization = null;
     this.controller = null;
     ui = null;
+    config = null;
+
+    if (!canvas) {
+      return;
+    }
 
     if (alwaysVisibleElements !== null) {
       alwaysVisibleElements.destroy();
@@ -1026,6 +1085,7 @@ TiltChrome.UI.Default = function() {
     pStripButton = null;
     aStripButton = null;
     imgStripButton = null;
+    iframeStripButton = null;
     otherStripButton = null;
 
     exitButton = null;
@@ -1062,5 +1122,5 @@ TiltChrome.UI.Default = function() {
   };
 
   // intercept this object using a profiler when building in debug mode
-  Tilt.Profiler.intercept("TiltChrome.UI", this);  
+  Tilt.Profiler.intercept("TiltChrome.UI", this);
 };

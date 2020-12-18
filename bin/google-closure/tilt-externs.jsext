@@ -5,10 +5,93 @@ gBrowser["tabContainer"] = gBrowser.tabContainer;
 gBrowser["contentWindow"] = gBrowser.contentWindow;
 gBrowser["selectedBrowser"] = gBrowser.selectedBrowser;
 gBrowser.selectedBrowser["parentNode"] = gBrowser.selectedBrowser.parentNode;
+gBrowser.selectedBrowser["markupDocumentViewer"] = gBrowser.selectedBrowser.markupDocumentViewer;
+gBrowser.selectedBrowser.markupDocumentViewer["fullZoom"] = gBrowser.selectedBrowser.markupDocumentViewer.fullZoom;
 
+window["Services"] = Services;
+window["Tilt"] = Tilt;
 window["TiltChrome"] = TiltChrome;
+window["InspectorUI"] = InspectorUI;
+
+Services["obs"] = Services.obs;
+Services.obs["addObserver"] = Services.obs.addObserver;
+Services.obs["removeObserver"] = Services.obs.removeObserver;
+
+Services["prefs"] = Services.prefs;
+Services.prefs["getBoolPref"] = Services.prefs.getBoolPref;
+Services.prefs["setBoolPref"] = Services.prefs.setBoolPref;
+
+InspectorUI["stopInspecting"] = InspectorUI.stopInspecting;
+InspectorUI["openInspectorUI"] = InspectorUI.openInspectorUI;
+InspectorUI["closeInspectorUI"] = InspectorUI.closeInspectorUI;
+InspectorUI["toggleInspectorUI"] = InspectorUI.toggleInspectorUI;
+InspectorUI["INSPECTOR_NOTIFICATIONS"] = InspectorUI.INSPECTOR_NOTIFICATIONS;
+InspectorUI["INSPECTOR_NOTIFICATIONS"]["OPENED"] = InspectorUI.INSPECTOR_NOTIFICATIONS.OPENED;
+InspectorUI["INSPECTOR_NOTIFICATIONS"]["CLOSED"] = InspectorUI.INSPECTOR_NOTIFICATIONS.CLOSED;
+
+Tilt["initialize"] = Tilt.initialize;
+Tilt["visualizers"] = Tilt.visualizers;
+Tilt["currentWindowId"] = Tilt.currentWindowId;
+
+Tilt.visualizers[Tilt.currentWindowId].isInitialized;
+
+
+Tilt["Preferences"] = Tilt.Preferences;
+Tilt.Preferences["get"] = Tilt.Preferences.get;
+Tilt.Preferences["set"] = Tilt.Preferences.set;
+Tilt.Preferences["create"] = Tilt.Preferences.create;
+
+TiltChrome["EntryPoint"] = TiltChrome.EntryPoint;
+TiltChrome.EntryPoint["includeScripts"] = TiltChrome.EntryPoint.includeScripts;
+TiltChrome.EntryPoint["refreshKeyset"] = TiltChrome.EntryPoint.refreshKeyset;
+
 TiltChrome["BrowserOverlay"] = TiltChrome.BrowserOverlay;
 TiltChrome.BrowserOverlay["initialize"] = TiltChrome.BrowserOverlay.initialize;
+TiltChrome.BrowserOverlay["destroy"] = TiltChrome.BrowserOverlay.destroy;
+TiltChrome.BrowserOverlay["nativeImpl"] = TiltChrome.BrowserOverlay.nativeImpl;
+
+TiltChrome["Config"] = TiltChrome.Config;
+TiltChrome.Config["Visualization"] = TiltChrome.Config.Visualization;
+TiltChrome.Config.Visualization["nativeTiltEnabled"] = TiltChrome.Config.Visualization.nativeTiltEnabled;
+TiltChrome.Config.Visualization["nativeTiltHello"] = TiltChrome.Config.Visualization.nativeTiltHello;
+TiltChrome.Config.Visualization["refreshVisualization"] = TiltChrome.Config.Visualization.refreshVisualization;
+TiltChrome.Config.Visualization["sourceEditorTheme"] = TiltChrome.Config.Visualization.sourceEditorTheme;
+TiltChrome.Config.Visualization["hideUserInterfaceAtInit"] = TiltChrome.Config.Visualization.hideUserInterfaceAtInit;
+TiltChrome.Config.Visualization["disableMinidomAtInit"] = TiltChrome.Config.Visualization.disableMinidomAtInit;
+TiltChrome.Config.Visualization["enableJoystick"] = TiltChrome.Config.Visualization.enableJoystick;
+TiltChrome.Config.Visualization["useAccelerometer"] = TiltChrome.Config.Visualization.useAccelerometer;
+TiltChrome.Config.Visualization["escapeKeyCloses"] = TiltChrome.Config.Visualization.escapeKeyCloses;
+TiltChrome.Config.Visualization["keyShortcutOpenClose"] = TiltChrome.Config.Visualization.keyShortcutOpenClose;
+TiltChrome.Config.Visualization["reload"] = TiltChrome.Config.Visualization.reload;
+
+TiltChrome.Config.Visualization["Set"] = TiltChrome.Config.Visualization.Set;
+TiltChrome.Config.Visualization.Set["nativeTiltEnabled"] = TiltChrome.Config.Visualization.Set.nativeTiltEnabled;
+TiltChrome.Config.Visualization.Set["nativeTiltHello"] = TiltChrome.Config.Visualization.Set.nativeTiltHello;
+TiltChrome.Config.Visualization.Set["refreshVisualization"] = TiltChrome.Config.Visualization.Set.refreshVisualization;
+TiltChrome.Config.Visualization.Set["sourceEditorTheme"] = TiltChrome.Config.Visualization.Set.sourceEditorTheme;
+TiltChrome.Config.Visualization.Set["hideUserInterfaceAtInit"] = TiltChrome.Config.Visualization.Set.hideUserInterfaceAtInit;
+TiltChrome.Config.Visualization.Set["disableMinidomAtInit"] = TiltChrome.Config.Visualization.Set.disableMinidomAtInit;
+TiltChrome.Config.Visualization.Set["enableJoystick"] = TiltChrome.Config.Visualization.Set.enableJoystick;
+TiltChrome.Config.Visualization.Set["useAccelerometer"] = TiltChrome.Config.Visualization.Set.useAccelerometer;
+TiltChrome.Config.Visualization.Set["escapeKeyCloses"] = TiltChrome.Config.Visualization.Set.escapeKeyCloses;
+TiltChrome.Config.Visualization.Set["keyShortcutOpenClose"] = TiltChrome.Config.Visualization.Set.keyShortcutOpenClose;
+
+TiltChrome["Options"] = TiltChrome.Options;
+TiltChrome.Options["windowLoad"] = TiltChrome.Options.windowLoad;
+TiltChrome.Options["windowUnload"] = TiltChrome.Options.windowUnload;
+TiltChrome.Options["windowKeyUp"] = TiltChrome.Options.windowKeyUp;
+TiltChrome.Options["refreshVisualizationCheckboxPressed"] = TiltChrome.Options.refreshVisualizationCheckboxPressed;
+TiltChrome.Options["refreshFastestRadioPressed"] = TiltChrome.Options.refreshFastestRadioPressed;
+TiltChrome.Options["refreshRecommendedRadioPressed"] = TiltChrome.Options.refreshRecommendedRadioPressed;
+TiltChrome.Options["refreshSlowestRadioPressed"] = TiltChrome.Options.refreshSlowestRadioPressed;
+TiltChrome.Options["escapeKeyCheckboxPressed"] = TiltChrome.Options.escapeKeyCheckboxPressed;
+TiltChrome.Options["hideUICheckboxPressed"] = TiltChrome.Options.hideUICheckboxPressed;
+TiltChrome.Options["disableMinidomCheckboxPressed"] = TiltChrome.Options.disableMinidomCheckboxPressed;
+TiltChrome.Options["enableJoystickCheckboxPressed"] = TiltChrome.Options.enableJoystickCheckboxPressed;
+TiltChrome.Options["useAccelerometerCheckboxPressed"] = TiltChrome.Options.useAccelerometerCheckboxPressed;
+TiltChrome.Options["openCloseTextboxFocus"] = TiltChrome.Options.openCloseTextboxFocus;
+TiltChrome.Options["openCloseTextboxKeyDown"] = TiltChrome.Options.openCloseTextboxKeyDown;
+TiltChrome.Options["openCloseResetButtonPressed"] = TiltChrome.Options.openCloseResetButtonPressed;
 
 
 window["Components"] = Components;
@@ -24,15 +107,28 @@ Components["isSuccessCode"] = Components.isSuccessCode;
 Cu["import"] = Cu.import;
 
 
+Ci["nsIPrefService"] = Ci.nsIPrefService;
 Ci["nsIPromptService"] = Ci.nsIPromptService;
 Ci["nsIConsoleService"] = Ci.nsIConsoleService;
 Ci["nsIScriptError"] = Ci.nsIScriptError;
+
+Cc["@mozilla.org/preferences-service;1"]["getService"] = Cc["@mozilla.org/preferences-service;1"].getService;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService)["getBranch"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch;
 
 Cc["@mozilla.org/embedcomp/prompt-service;1"]["getService"] = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService;
 Cc["@mozilla.org/consoleservice;1"]["getService"] = Cc["@mozilla.org/consoleservice;1"].getService;
 Cc["@mozilla.org/scripterror;1"]["createInstance"] = Cc["@mozilla.org/scripterror;1"].createInstance;
 
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService)["getBranch"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["prefHasUserValue"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.prefHasUserValue;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["getBoolPref"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.getBoolPref;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["getCharPref"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.getCharPref;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["getIntPref"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.getIntPref;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["setBoolPref"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.setBoolPref;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["setCharPref"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.setCharPref;
+Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch["setIntPref"] = Cc["@mozilla.org/preferences-service;1"].getService(Ci.nsIPrefService).getBranch.setIntPref;
 Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService)["alert"] = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService).alert;
+Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService)["confirmCheck"] = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService).confirmCheck;
 Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError)["init"] = Cc["@mozilla.org/scripterror;1"].createInstance(Ci.nsIScriptError).init;
 Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService)["logMessage"] = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logMessage;
 Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService)["logStringMessage"] = Cc["@mozilla.org/consoleservice;1"].getService(Ci.nsIConsoleService).logStringMessage;
@@ -75,15 +171,25 @@ window["NetUtil"] = NetUtil;
 NetUtil["asyncCopy"] = NetUtil.asyncCopy;
 
 
-window["QueryInterface"] = QueryInterface;
+window["QueryInterface"] = window.QueryInterface;
 Ci["nsIInterfaceRequestor"] = Ci.nsIInterfaceRequestor;
 Ci["nsIDOMWindowUtils"] = Ci.nsIDOMWindowUtils;
 QueryInterface(Ci.nsIInterfaceRequestor)["getInterface"] = QueryInterface(Ci.nsIInterfaceRequestor).getInterface;
 QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils)["garbageCollect"] = QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowUtils).garbageCollect;
 
+
+window["isNaN"] = window.isNaN;
+window["parseInt"] = window.parseInt;
+window["parseFloat"] = window.parseFloat;
+
+
 panel.openPopup;
 panel.hidePopup;
 canvas.getContext("2d").drawWindow;
+canvas.offsetTop;
+canvas.offsetLeft;
+e.boundingClientRect;
+e.accelerationIncludingGravity
 
 iframe.contentWindow.refreshCodeEditor;
 iframe.contentWindow.refreshColorPicker;

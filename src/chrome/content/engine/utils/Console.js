@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -34,6 +37,8 @@
 
 var Tilt = Tilt || {};
 var EXPORTED_SYMBOLS = ["Tilt.Console", "Tilt.StringBundle"];
+
+/*global Cc, Ci, Cu */
 
 /**
  * Various console functions required by the engine.
@@ -60,7 +65,34 @@ Tilt.Console = {
     }
     catch(e) {
       // running from an unprivileged environment
-      alert(message);
+      window.alert(message);
+    }
+  },
+
+  /**
+   * Shows a modal confirm message popup.
+   *
+   * @param {String} title: the title of the popup
+   * @param {String} message: the message to be logged
+   * @param {String} checkMessage: text to appear with the checkbox
+   * @param {Boolean} checkState: the checked state of the checkbox
+   */
+  confirmCheck: function(title, message, checkMessage, checkState) {
+    var prompt;
+
+    if ("undefined" === typeof message) {
+      message = "undefined";
+    }
+    try {
+      prompt = Cc["@mozilla.org/embedcomp/prompt-service;1"].
+        getService(Ci.nsIPromptService);
+
+      return (
+        prompt.confirmCheck(null, title, message, checkMessage, checkState));
+    }
+    catch(e) {
+      // running from an unprivileged environment
+      window.alert(message);
     }
   },
 
@@ -86,7 +118,7 @@ Tilt.Console = {
     }
     catch(e) {
       // running from an unprivileged environment
-      alert(message);
+      window.alert(message);
     }
   },
 
@@ -141,7 +173,7 @@ Tilt.Console = {
     }
     catch(e) {
       // running from an unprivileged environment
-      alert(message);
+      window.alert(message);
     }
   }
 };
@@ -200,6 +232,7 @@ Tilt.StringBundle = {
     if ("undefined" === typeof string) {
       return "undefined";
     }
+
     // undesired, you should always pass arguments when formatting strings
     if ("undefined" === typeof args) {
       return string;
@@ -222,3 +255,9 @@ Tilt.StringBundle = {
     }
   }
 };
+
+// bind the owner object to the necessary functions
+Tilt.bindObjectFunc(Tilt.Console);
+
+// intercept this object using a profiler when building in debug mode
+Tilt.Profiler.intercept("Tilt.Console", Tilt.Console);

@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -105,6 +108,7 @@ Tilt.GLSL = {
       return null;
     }
 
+    // return the newly compiled shader from the specified source
     return shader;
   },
 
@@ -117,7 +121,7 @@ Tilt.GLSL = {
    */
   link: function(vertShader, fragShader) {
     var gl = Tilt.$gl,
-      program, status, source, data;
+      program, status, source, data, cached;
 
     // create a program and attach the compiled vertex and fragment shaders
     program = gl.createProgram();
@@ -145,7 +149,9 @@ Tilt.GLSL = {
     source = [vertShader.src, fragShader.src].join(" ");
     data = source.replace(/#.*|[(){};,]/g, " ").split(" ");
 
-    return this.shaderIOCache(program, data);
+    // cache the io attributes and uniforms automatically
+    cached = this.shaderIOCache(program, data);
+    return cached;
   },
 
   /**
@@ -181,12 +187,13 @@ Tilt.GLSL = {
    */
   shaderIO: function(program, variable) {
     if ("string" === typeof variable) {
-      // careful! weird stuff happens on Windows with empty strings
+      // weird stuff can happen with empty strings
       if (variable.length < 1) {
         return null;
       }
 
       var io;
+
       // try to get a shader attribute
       if ((io = this.shaderAttribute(program, variable)) >= 0) {
         return io;
@@ -197,6 +204,7 @@ Tilt.GLSL = {
       }
     }
 
+    // no attribute or uniform was found, so we return null
     return null;
   },
 
@@ -222,8 +230,8 @@ Tilt.GLSL = {
       param = variables[i];
       io = this.shaderIO(program, param);
 
-      // if we get an attribute location, store it
       if ("number" === typeof io) {
+        // if we get an attribute location, store it
         // bind the new parameter only if it was not already defined
         if ("undefined" === typeof program.attributes[param]) {
           program.attributes[param] = io;
@@ -231,8 +239,9 @@ Tilt.GLSL = {
         }
       }
 
-      // if we get a WebGL uniform object, store it
+      /*global WebGLUniformLocation */
       if (("object" === typeof io && io instanceof WebGLUniformLocation)) {
+        // if we get a WebGL uniform object, store it
         // bind the new parameter only if it was not already defined
         if ("undefined" === typeof program.uniforms[param]) {
           program.uniforms[param] = io;

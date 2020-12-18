@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -47,7 +50,7 @@ Tilt.Mesh.prototype.save = function(directory, name) {
     v = this.vertices.components,
     t = this.texCoord.components,
     f = this.indices.components,
-    i, j, k, len, str;
+    i, j, k, len, str, s;
 
   output.push("mtllib " + name + ".mtl",
               "usemtl webpage");
@@ -62,7 +65,7 @@ Tilt.Mesh.prototype.save = function(directory, name) {
                 "map_Ks " + name + ".png");
 
   for (i = 0, len = v.length; i < len; i += 3) {
-    output.push("v " + (v[i    ] / +100) + " " + 
+    output.push("v " + (v[i    ] / +100) + " " +
                        (v[i + 1] / -100) + " " +
                        (v[i + 2] / +100));
   }
@@ -76,8 +79,7 @@ Tilt.Mesh.prototype.save = function(directory, name) {
                        (f[i + 2] + 1) + "/" + (f[i + 2] + 1));
   }
 
-  var s = Tilt.File.separator;
-
+  s = Tilt.File.separator;
   Tilt.File.save(output.join("\n"), directory + s + name + ".obj");
   Tilt.File.save(material.join("\n"), directory + s + name + ".mtl");
 };

@@ -13,9 +13,12 @@
  *
  * The Original Code is Tilt: A WebGL-based 3D visualization of a webpage.
  *
- * The Initial Developer of the Original Code is Victor Porof.
+ * The Initial Developer of the Original Code is The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Victor Porof <victor.porof@gmail.com> (original author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -37,6 +40,7 @@ var EXPORTED_SYMBOLS = ["Tilt.VertexBuffer", "Tilt.IndexBuffer"];
 
 /**
  * Vertex buffer constructor.
+ * Creates a vertex buffer containing an array of elements.
  *
  * @param {Tilt.Renderer} renderer: an instance of Tilt.Renderer
  * @param {Array} elementsArray: an array of floats
@@ -113,13 +117,14 @@ Tilt.VertexBuffer.prototype = {
    * Destroys this object and sets all members to null.
    */
   destroy: function() {
-    Tilt.$gl.deleteBuffer(this.$ref);
+    try { Tilt.$gl.deleteBuffer(this.$ref); } catch(e) {}
     Tilt.destroyObject(this);
   }
 };
 
 /**
  * IndexBuffer constructor.
+ * Creates an index buffer containing an array of indices.
  *
  * @param {Array} elementsArray: an array of unsigned integers
  * @param {Number} numItems: how many items to use from the array
@@ -194,7 +199,7 @@ Tilt.IndexBuffer.prototype = {
    * Destroys this object and deletes all members.
    */
   destroy: function() {
-    Tilt.$gl.deleteBuffer(this.$ref);
+    try { Tilt.$gl.deleteBuffer(this.$ref); } catch(e) {}
     Tilt.destroyObject(this);
   }
 };
